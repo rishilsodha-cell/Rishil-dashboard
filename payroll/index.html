@@ -6,222 +6,153 @@
 <title>Payroll Discrepancy Tool</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ── Reset & base ─────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
-  background: #0a0a0d;
-  color: #e8e8ea;
+  background: #0a0a0d; color: #e8e8ea;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  line-height: 1.5; padding: 2rem; max-width: 1200px; margin: 0 auto;
 }
-
 a { color: rgba(232,232,234,0.5); text-decoration: none; }
 a:hover { color: #e8e8ea; }
-
 h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.3rem; }
-h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.8rem; color: rgba(232,232,234,0.7); }
-
-.mono {
-  font-family: "JetBrains Mono", "Roboto Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
-  font-variant-numeric: tabular-nums;
-}
-
+.mono { font-family: "JetBrains Mono","Roboto Mono","SF Mono","Cascadia Code",ui-monospace,monospace; font-variant-numeric: tabular-nums; }
 .muted { color: rgba(232,232,234,0.4); }
 .small { font-size: 0.8rem; }
-
-/* ── Layout ───────────────────────────────────────────── */
+.hidden { display: none; }
 .back { font-size: 0.8rem; margin-bottom: 1.5rem; display: inline-block; }
 
-.top-bar {
-  display: flex; gap: 1.5rem; align-items: flex-end;
-  flex-wrap: wrap; margin-bottom: 2rem;
-}
-.top-bar label { font-size: 0.8rem; color: rgba(232,232,234,0.5); display: block; margin-bottom: 0.2rem; }
-.top-bar input[type="text"] {
-  background: #16161a; border: 1px solid rgba(232,232,234,0.12); border-radius: 4px;
-  color: #e8e8ea; padding: 0.4rem 0.7rem; font-size: 0.85rem; width: 260px;
-}
+/* ── Top bar ──────────────────────────────────────────── */
+.top-bar { display:flex; gap:1.5rem; align-items:flex-end; flex-wrap:wrap; margin-bottom:2rem; }
+.top-bar label { font-size:0.8rem; color:rgba(232,232,234,0.5); display:block; margin-bottom:0.2rem; }
+.top-bar input[type="text"] { background:#16161a; border:1px solid rgba(232,232,234,0.12); border-radius:4px; color:#e8e8ea; padding:0.4rem 0.7rem; font-size:0.85rem; width:260px; }
 
-.upload-row { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+/* ── Upload ───────────────────────────────────────────── */
+.upload-row { display:flex; gap:2rem; margin-bottom:2rem; flex-wrap:wrap; }
+.upload-zone { flex:1; min-width:280px; border:2px dashed rgba(232,232,234,0.12); border-radius:8px; padding:1.5rem; text-align:center; cursor:pointer; transition:border-color 0.2s; position:relative; }
+.upload-zone:hover,.upload-zone.dragover { border-color:rgba(232,232,234,0.35); }
+.upload-zone.loaded { border-color:rgba(74,222,128,0.4); border-style:solid; }
+.upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.upload-zone .label { font-size:0.85rem; font-weight:600; margin-bottom:0.3rem; }
+.upload-zone .hint { font-size:0.75rem; color:rgba(232,232,234,0.3); }
+.upload-zone .filename { font-size:0.75rem; color:rgba(74,222,128,0.7); margin-top:0.5rem; }
+.preview { margin-top:1rem; text-align:left; max-height:180px; overflow-y:auto; }
+.preview table { width:100%; border-collapse:collapse; font-size:0.75rem; }
+.preview th { text-align:left; color:rgba(232,232,234,0.4); padding:0.2rem 0.5rem; border-bottom:1px solid rgba(232,232,234,0.08); }
+.preview td { padding:0.2rem 0.5rem; border-bottom:1px solid rgba(232,232,234,0.05); }
 
-.upload-zone {
-  flex: 1; min-width: 280px;
-  border: 2px dashed rgba(232,232,234,0.12); border-radius: 8px;
-  padding: 1.5rem; text-align: center; cursor: pointer;
-  transition: border-color 0.2s;
-  position: relative;
-}
-.upload-zone:hover, .upload-zone.dragover { border-color: rgba(232,232,234,0.35); }
-.upload-zone.loaded { border-color: rgba(74,222,128,0.4); border-style: solid; }
-.upload-zone input[type="file"] {
-  position: absolute; inset: 0; opacity: 0; cursor: pointer;
-}
-.upload-zone .label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; }
-.upload-zone .hint { font-size: 0.75rem; color: rgba(232,232,234,0.3); }
-.upload-zone .filename { font-size: 0.75rem; color: rgba(74,222,128,0.7); margin-top: 0.5rem; }
+/* ── Worker cards ─────────────────────────────────────── */
+.worker-cards { display:flex; flex-direction:column; gap:0.6rem; margin-top:1rem; text-align:left; }
+.worker-card { background:rgba(232,232,234,0.03); border:1px solid rgba(232,232,234,0.08); border-radius:6px; padding:0.8rem 1rem; }
+.worker-card.has-error { border-color:rgba(239,68,68,0.4); }
+.worker-card .wc-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.3rem; }
+.worker-card .wc-name { font-weight:600; font-size:0.88rem; }
+.worker-card .wc-file { font-size:0.7rem; color:rgba(232,232,234,0.35); }
+.worker-card .wc-stats { font-size:0.78rem; color:rgba(232,232,234,0.6); }
+.worker-card .wc-stats span { margin-right:1rem; }
+.worker-card .wc-error { font-size:0.78rem; color:#ef4444; margin-top:0.3rem; }
+.worker-card .wc-warn { font-size:0.75rem; color:#eab308; margin-top:0.2rem; }
+.worker-card .wc-actions { margin-top:0.4rem; }
+.worker-card .btn-sm { margin-right:0.3rem; }
 
-/* Preview */
-.preview { margin-top: 1rem; text-align: left; max-height: 180px; overflow-y: auto; }
-.preview table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-.preview th { text-align: left; color: rgba(232,232,234,0.4); padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(232,232,234,0.08); }
-.preview td { padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(232,232,234,0.05); }
-
-/* ── Worker file cards ────────────────────────────────── */
-.worker-cards { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; text-align: left; }
-.worker-card {
-  background: rgba(232,232,234,0.03); border: 1px solid rgba(232,232,234,0.08);
-  border-radius: 6px; padding: 0.8rem 1rem; position: relative;
-}
-.worker-card.has-error { border-color: rgba(239,68,68,0.4); }
-.worker-card .wc-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3rem; }
-.worker-card .wc-name { font-weight: 600; font-size: 0.88rem; }
-.worker-card .wc-file { font-size: 0.7rem; color: rgba(232,232,234,0.35); }
-.worker-card .wc-stats { font-size: 0.78rem; color: rgba(232,232,234,0.6); }
-.worker-card .wc-stats span { margin-right: 1rem; }
-.worker-card .wc-error { font-size: 0.78rem; color: #ef4444; margin-top: 0.3rem; }
-.worker-card .wc-actions { margin-top: 0.4rem; }
-.worker-card .btn-sm { margin-right: 0.3rem; }
-
-/* ── Date range bar ───────────────────────────────────── */
-.date-range-bar {
-  background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2);
-  border-radius: 6px; padding: 0.8rem 1.2rem; margin-bottom: 1.5rem;
-  font-size: 0.88rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-}
-.date-range-bar strong { color: #e8e8ea; }
-.date-range-bar .warning { color: #eab308; font-size: 0.78rem; }
-
-/* ── Override modal ───────────────────────────────────── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-  z-index: 100; align-items: center; justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: #16161a; border: 1px solid rgba(232,232,234,0.15);
-  border-radius: 8px; padding: 1.5rem; width: 380px; max-width: 90vw;
-}
-.modal h3 { font-size: 1rem; margin-bottom: 1rem; }
-.modal label { font-size: 0.78rem; color: rgba(232,232,234,0.5); display: block; margin-bottom: 0.15rem; }
-.modal input[type="text"], .modal input[type="number"] {
-  background: #0a0a0d; border: 1px solid rgba(232,232,234,0.12); border-radius: 4px;
-  color: #e8e8ea; padding: 0.4rem 0.6rem; font-size: 0.85rem; width: 100%; margin-bottom: 0.8rem;
-}
-.modal .modal-btns { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
+/* ── Date range ───────────────────────────────────────── */
+.date-range-bar { background:rgba(124,58,237,0.08); border:1px solid rgba(124,58,237,0.2); border-radius:6px; padding:0.8rem 1.2rem; margin-bottom:1.5rem; font-size:0.88rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+.date-range-bar strong { color:#e8e8ea; }
+.date-range-bar .warning { color:#eab308; font-size:0.78rem; }
 
 /* ── Buttons ──────────────────────────────────────────── */
-.btn {
-  display: inline-block; padding: 0.5rem 1.2rem; font-size: 0.82rem;
-  border: 1px solid rgba(232,232,234,0.15); border-radius: 5px;
-  background: transparent; color: #e8e8ea; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.btn:hover { background: rgba(232,232,234,0.06); border-color: rgba(232,232,234,0.3); }
-.btn-primary { background: rgba(232,232,234,0.08); border-color: rgba(232,232,234,0.25); }
-.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.72rem; }
-.btn-danger { color: #ef4444; border-color: rgba(239,68,68,0.3); }
-.btn-danger:hover { background: rgba(239,68,68,0.1); }
-.btn-row { display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
-.btn-row .error-msg { font-size: 0.78rem; color: #ef4444; }
+.btn { display:inline-block; padding:0.5rem 1.2rem; font-size:0.82rem; border:1px solid rgba(232,232,234,0.15); border-radius:5px; background:transparent; color:#e8e8ea; cursor:pointer; transition:background 0.15s,border-color 0.15s; }
+.btn:hover { background:rgba(232,232,234,0.06); border-color:rgba(232,232,234,0.3); }
+.btn-primary { background:rgba(232,232,234,0.08); border-color:rgba(232,232,234,0.25); }
+.btn-sm { padding:0.25rem 0.6rem; font-size:0.72rem; }
+.btn-danger { color:#ef4444; border-color:rgba(239,68,68,0.3); }
+.btn-danger:hover { background:rgba(239,68,68,0.1); }
+.btn-row { display:flex; gap:0.8rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center; }
+.btn-row .error-msg { font-size:0.78rem; color:#ef4444; }
+
+/* ── Modal ────────────────────────────────────────────── */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:100; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal { background:#16161a; border:1px solid rgba(232,232,234,0.15); border-radius:8px; padding:1.5rem; width:380px; max-width:90vw; }
+.modal h3 { font-size:1rem; margin-bottom:1rem; }
+.modal label { font-size:0.78rem; color:rgba(232,232,234,0.5); display:block; margin-bottom:0.15rem; }
+.modal input[type="text"],.modal input[type="number"] { background:#0a0a0d; border:1px solid rgba(232,232,234,0.12); border-radius:4px; color:#e8e8ea; padding:0.4rem 0.6rem; font-size:0.85rem; width:100%; margin-bottom:0.8rem; }
+.modal .modal-btns { display:flex; gap:0.5rem; justify-content:flex-end; margin-top:0.5rem; }
 
 /* ── Summary banner ───────────────────────────────────── */
-.summary-banner {
-  background: rgba(232,232,234,0.04); border: 1px solid rgba(232,232,234,0.1);
-  border-radius: 6px; padding: 1rem 1.5rem; margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-}
-.summary-banner strong { color: #e8e8ea; }
+.summary-banner { background:rgba(232,232,234,0.04); border:1px solid rgba(232,232,234,0.1); border-radius:6px; padding:1rem 1.5rem; margin-bottom:1.5rem; font-size:0.9rem; }
+.summary-banner strong { color:#e8e8ea; }
+.summary-banner .dup-warn { display:block; color:#eab308; font-size:0.82rem; margin-top:0.4rem; }
 
 /* ── Results table ────────────────────────────────────── */
-.results-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
-.results-table th {
-  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
-  color: rgba(232,232,234,0.4); padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid rgba(232,232,234,0.1);
-}
-.results-table td {
-  padding: 0.5rem 0.6rem; font-size: 0.82rem;
-  border-bottom: 1px solid rgba(232,232,234,0.06);
-  vertical-align: top;
-}
-.results-table .num { text-align: right; }
+.results-table { width:100%; border-collapse:collapse; margin-bottom:2rem; }
+.results-table th { text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; color:rgba(232,232,234,0.4); padding:0.5rem 0.6rem; border-bottom:1px solid rgba(232,232,234,0.1); }
+.results-table td { padding:0.5rem 0.6rem; font-size:0.82rem; border-bottom:1px solid rgba(232,232,234,0.06); vertical-align:top; }
+.results-table .num { text-align:right; }
+.results-table tr.status-match { opacity:0.4; }
+.results-table tr.status-match td:first-child { border-left:4px solid #555; }
+.results-table tr.status-mismatch td:first-child { border-left:4px solid #eab308; }
+.results-table tr.status-missing td:first-child { border-left:4px solid #ef4444; }
+.results-table textarea { background:#16161a; border:1px solid rgba(232,232,234,0.1); border-radius:3px; color:#e8e8ea; font-size:0.78rem; padding:0.3rem 0.5rem; width:100%; min-width:120px; height:2.2rem; resize:vertical; font-family:inherit; }
+.status-badge { display:inline-block; font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:3px; white-space:nowrap; }
+.badge-match { background:rgba(107,114,128,0.2); color:rgba(232,232,234,0.5); }
+.badge-over { background:rgba(234,179,8,0.15); color:#eab308; }
+.badge-under { background:rgba(234,179,8,0.15); color:#eab308; }
+.badge-missing { background:rgba(239,68,68,0.15); color:#ef4444; }
+.badge-dup { background:rgba(234,179,8,0.15); color:#eab308; }
 
-.results-table tr.status-match { opacity: 0.4; }
-.results-table tr.status-match td:first-child { border-left: 4px solid #555; }
-.results-table tr.status-mismatch td:first-child { border-left: 4px solid #eab308; }
-.results-table tr.status-missing td:first-child { border-left: 4px solid #ef4444; }
+/* ── Expand chevron ───────────────────────────────────── */
+.expand-btn { cursor:pointer; user-select:none; font-size:0.75rem; color:rgba(232,232,234,0.4); transition:transform 0.2s; display:inline-block; width:1.2rem; }
+.expand-btn.open { transform:rotate(90deg); }
+.expand-btn:hover { color:#e8e8ea; }
 
-.results-table textarea {
-  background: #16161a; border: 1px solid rgba(232,232,234,0.1); border-radius: 3px;
-  color: #e8e8ea; font-size: 0.78rem; padding: 0.3rem 0.5rem;
-  width: 100%; min-width: 120px; height: 2.2rem; resize: vertical;
-  font-family: inherit;
-}
-
-.status-badge {
-  display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem;
-  border-radius: 3px; white-space: nowrap;
-}
-.badge-match { background: rgba(107,114,128,0.2); color: rgba(232,232,234,0.5); }
-.badge-over { background: rgba(234,179,8,0.15); color: #eab308; }
-.badge-under { background: rgba(234,179,8,0.15); color: #eab308; }
-.badge-missing { background: rgba(239,68,68,0.15); color: #ef4444; }
+/* ── Daily breakdown ──────────────────────────────────── */
+.daily-row td { padding:0 !important; border:none !important; }
+.daily-wrap { overflow:hidden; transition:max-height 0.3s ease; max-height:0; }
+.daily-wrap.open { max-height:5000px; }
+.daily-inner { padding:0.5rem 0.6rem 1rem 2rem; border-left:2px solid rgba(124,58,237,0.2); margin-left:0.6rem; }
+.daily-inner .filter-pills { display:flex; gap:0.4rem; margin-bottom:0.6rem; }
+.daily-inner .pill { font-size:0.7rem; padding:0.15rem 0.6rem; border-radius:10px; border:1px solid rgba(232,232,234,0.12); cursor:pointer; color:rgba(232,232,234,0.5); transition:all 0.15s; }
+.daily-inner .pill.active { background:rgba(124,58,237,0.2); border-color:rgba(124,58,237,0.4); color:#e8e8ea; }
+.daily-inner .pill:hover { border-color:rgba(232,232,234,0.3); }
+.day-table { width:100%; border-collapse:collapse; font-size:0.75rem; margin-top:0.3rem; }
+.day-table th { text-align:left; color:rgba(232,232,234,0.35); padding:0.25rem 0.5rem; border-bottom:1px solid rgba(232,232,234,0.08); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.04em; }
+.day-table td { padding:0.25rem 0.5rem; border-bottom:1px solid rgba(232,232,234,0.04); vertical-align:top; }
+.day-table tr.day-match { opacity:0.35; }
+.day-table tr.day-match.filter-hidden { display:none; }
+.day-table tr.day-mismatch td:first-child { border-left:3px solid #eab308; }
+.day-table tr.day-missing td:first-child { border-left:3px solid #ef4444; }
+.day-table tr.day-dup td:first-child { border-left:3px solid #eab308; }
+.day-table textarea { background:#16161a; border:1px solid rgba(232,232,234,0.08); border-radius:2px; color:#e8e8ea; font-size:0.7rem; padding:0.15rem 0.4rem; width:100%; min-width:80px; height:1.6rem; resize:vertical; font-family:inherit; }
+.dup-link { font-size:0.68rem; color:#eab308; cursor:pointer; text-decoration:underline; }
+.dup-popover { background:#1e1e24; border:1px solid rgba(234,179,8,0.3); border-radius:4px; padding:0.5rem; font-size:0.7rem; margin-top:0.3rem; max-width:400px; }
+.dup-popover table { border-collapse:collapse; width:100%; }
+.dup-popover td,.dup-popover th { padding:0.15rem 0.4rem; border-bottom:1px solid rgba(232,232,234,0.06); }
 
 /* ── Email directory ──────────────────────────────────── */
-.directory { margin-bottom: 2rem; }
-.directory-toggle {
-  font-size: 0.82rem; cursor: pointer; color: rgba(232,232,234,0.5);
-  user-select: none; margin-bottom: 0.5rem;
-}
-.directory-toggle:hover { color: #e8e8ea; }
-.directory-body { display: none; }
-.directory-body.open { display: block; }
-.directory-row {
-  display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.3rem;
-}
-.directory-row .dir-name {
-  font-size: 0.78rem; width: 200px; color: rgba(232,232,234,0.6);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.directory-row input[type="email"] {
-  background: #16161a; border: 1px solid rgba(232,232,234,0.1); border-radius: 3px;
-  color: #e8e8ea; font-size: 0.78rem; padding: 0.2rem 0.5rem; width: 240px;
-}
-.directory-row .btn-sm { flex-shrink: 0; }
+.directory { margin-bottom:2rem; }
+.directory-toggle { font-size:0.82rem; cursor:pointer; color:rgba(232,232,234,0.5); user-select:none; margin-bottom:0.5rem; }
+.directory-toggle:hover { color:#e8e8ea; }
+.directory-body { display:none; }
+.directory-body.open { display:block; }
+.directory-row { display:flex; gap:0.5rem; align-items:center; margin-bottom:0.3rem; }
+.directory-row .dir-name { font-size:0.78rem; width:200px; color:rgba(232,232,234,0.6); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.directory-row input[type="email"] { background:#16161a; border:1px solid rgba(232,232,234,0.1); border-radius:3px; color:#e8e8ea; font-size:0.78rem; padding:0.2rem 0.5rem; width:240px; }
+.directory-row .btn-sm { flex-shrink:0; }
 
-/* ── Sections ─────────────────────────────────────────── */
-section { margin-bottom: 2rem; }
-.hidden { display: none; }
-
-@media (max-width: 640px) {
-  body { padding: 1rem; }
-  .upload-row { flex-direction: column; }
-  .top-bar { flex-direction: column; align-items: stretch; }
-  .results-table { font-size: 0.72rem; }
-}
+@media (max-width:640px) { body{padding:1rem;} .upload-row{flex-direction:column;} .top-bar{flex-direction:column;align-items:stretch;} .results-table{font-size:0.72rem;} }
 </style>
 </head>
 <body>
-
 <a href="../index.html" class="back">← Dashboard</a>
 <h1>Payroll Discrepancy Tool</h1>
 <p class="muted small" style="margin-bottom:1.5rem;">Compare DOM Portal hours against support worker submitted timesheets. All processing happens in your browser.</p>
 
-<!-- Top bar: pay period -->
-<div class="top-bar">
-  <div>
-    <label for="pay-period">Pay period label (used in emails)</label>
-    <input type="text" id="pay-period" placeholder="e.g. April 2026 — Week 4">
-  </div>
-</div>
+<div class="top-bar"><div>
+  <label for="pay-period">Pay period label (used in emails)</label>
+  <input type="text" id="pay-period" placeholder="e.g. April 2026 — Week 4">
+</div></div>
 
-<!-- Upload zones -->
 <div class="upload-row">
-  <!-- Source A — DOM Portal -->
   <div class="upload-zone" id="zone-a">
     <input type="file" accept=".xlsx,.xls,.csv" id="file-a">
     <div class="label">Source A — DOM Portal</div>
@@ -229,7 +160,6 @@ section { margin-bottom: 2rem; }
     <div class="filename" id="fname-a"></div>
     <div class="preview" id="preview-a"></div>
   </div>
-  <!-- Source B — Support Worker timesheets -->
   <div class="upload-zone" id="zone-b">
     <input type="file" accept=".xlsx,.xls,.csv" id="file-b" multiple>
     <div class="label">Source B — Support Worker Timesheets</div>
@@ -239,751 +169,500 @@ section { margin-bottom: 2rem; }
   </div>
 </div>
 
-<!-- Date range -->
 <div class="date-range-bar hidden" id="date-range-bar">
   <strong>Comparing:</strong> <span id="date-range-label"></span>
   <span class="warning hidden" id="month-warning"></span>
 </div>
 
-<!-- Compare button -->
 <div class="btn-row">
   <button class="btn btn-primary" id="btn-compare">Compare</button>
   <button class="btn hidden" id="btn-export">Download as Excel</button>
   <span class="error-msg hidden" id="compare-error"></span>
 </div>
 
-<!-- Results -->
 <section id="results-section" class="hidden">
   <div class="summary-banner" id="summary-banner"></div>
-
   <div class="directory">
     <div class="directory-toggle" id="dir-toggle">▶ Staff Email Directory</div>
     <div class="directory-body" id="dir-body"></div>
   </div>
-
   <div style="overflow-x:auto;">
     <table class="results-table" id="results-table">
-      <thead>
-        <tr>
-          <th>Staff</th>
-          <th class="num">DOM Portal hrs</th>
-          <th class="num">Submitted hrs</th>
-          <th class="num">Difference</th>
-          <th class="num">£ Impact</th>
-          <th>Status</th>
-          <th>Notes</th>
-          <th></th>
-        </tr>
-      </thead>
+      <thead><tr>
+        <th style="width:1.5rem"></th><th>Staff</th><th class="num">DOM Portal hrs</th><th class="num">Submitted hrs</th><th class="num">Difference</th><th class="num">£ Impact</th><th>Status</th><th>Notes</th><th></th>
+      </tr></thead>
       <tbody id="results-body"></tbody>
     </table>
   </div>
 </section>
 
-<!-- Override modal -->
-<div class="modal-overlay" id="override-modal">
-  <div class="modal">
-    <h3>Override parsed values</h3>
-    <label for="ovr-name">Staff name</label>
-    <input type="text" id="ovr-name">
-    <label for="ovr-month">Month (e.g. April, May)</label>
-    <input type="text" id="ovr-month">
-    <label for="ovr-hours">Total hours</label>
-    <input type="number" id="ovr-hours" step="0.01">
-    <div class="modal-btns">
-      <button class="btn btn-sm" id="ovr-cancel">Cancel</button>
-      <button class="btn btn-sm btn-primary" id="ovr-save">Save</button>
-    </div>
-  </div>
-</div>
+<div class="modal-overlay" id="override-modal"><div class="modal">
+  <h3>Override parsed values</h3>
+  <label for="ovr-name">Staff name</label><input type="text" id="ovr-name">
+  <label for="ovr-month">Month (e.g. April, May)</label><input type="text" id="ovr-month">
+  <label for="ovr-hours">Total hours</label><input type="number" id="ovr-hours" step="0.01">
+  <div class="modal-btns"><button class="btn btn-sm" id="ovr-cancel">Cancel</button><button class="btn btn-sm btn-primary" id="ovr-save">Save</button></div>
+</div></div>
 
 <script>
-/* ================================================================
-   Payroll Discrepancy Tool
-   ================================================================ */
-
-const RATE = 13.45;
-const DISC_THRESHOLD = 0.25;
+const RATE = 13.45, DISC = 0.25;
+const MNAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MLOW = MNAMES.map(m => m.toLowerCase());
 
 /* ── Utility ──────────────────────────────────────────── */
-function normName(s) {
-  if (s == null) return "";
-  return String(s).trim().replace(/\s+/g, " ");
-}
-function normKey(s) { return normName(s).toLowerCase(); }
-function round2(n) { return Math.round(n * 100) / 100; }
-function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function norm(s){ return s==null?"":String(s).trim().replace(/\s+/g," "); }
+function nkey(s){ return norm(s).toLowerCase(); }
+function r2(n){ return Math.round(n*100)/100; }
+function esc(s){ const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+function toNum(v){ if(v==null)return 0; if(typeof v==="number")return v; const n=parseFloat(String(v).replace(/[^\d.\-]/g,"")); return isNaN(n)?0:n; }
+function readFile(f){ return new Promise((ok,err)=>{ const r=new FileReader(); r.onload=e=>ok(new Uint8Array(e.target.result)); r.onerror=err; r.readAsArrayBuffer(f); }); }
+function parseMon(s){ if(!s)return null; const l=String(s).trim().toLowerCase(); for(let i=0;i<12;i++) if(l.startsWith(MLOW[i].slice(0,3))) return i+1; const n=parseInt(l); return n>=1&&n<=12?n:null; }
+function dim(m,y){ return new Date(y,m,0).getDate(); }
+function dateKey(d){ return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
+function fmtDate(d){ const days=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]; return `${days[d.getDay()]} ${d.getDate()} ${MNAMES[d.getMonth()].slice(0,3)}`; }
+function parseOrd(s){ const m=String(s).trim().match(/^(\d+)/); return m?parseInt(m[1]):null; }
 
-function toNum(v) {
-  if (v == null) return 0;
-  if (typeof v === "number") return v;
-  const n = parseFloat(String(v).replace(/[^\d.\-]/g, ""));
-  return isNaN(n) ? 0 : n;
-}
-
-function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = e => resolve(new Uint8Array(e.target.result));
-    r.onerror = reject;
-    r.readAsArrayBuffer(file);
-  });
+function fmtTime(v){
+  if(v==null||v==="") return "?";
+  if(typeof v==="number"){ const total=Math.round(v*24*60); const h=Math.floor(total/60); const m=total%60; return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0"); }
+  if(v instanceof Date){ return String(v.getHours()).padStart(2,"0")+":"+String(v.getMinutes()).padStart(2,"0"); }
+  const s=String(v).trim(); const p=s.match(/^(\d{1,2}):(\d{2})/); return p?p[1].padStart(2,"0")+":"+p[2]:s.slice(0,5);
 }
 
-/* Month name → number (1-indexed) */
-const MONTH_NAMES = ["january","february","march","april","may","june",
-  "july","august","september","october","november","december"];
-function parseMonth(s) {
-  if (!s) return null;
-  const lc = String(s).trim().toLowerCase();
-  // Try month name
-  for (let i = 0; i < MONTH_NAMES.length; i++) {
-    if (lc.startsWith(MONTH_NAMES[i].slice(0, 3))) return i + 1;
-  }
-  // Try bare number
-  const n = parseInt(lc);
-  if (n >= 1 && n <= 12) return n;
-  return null;
-}
-
-function monthName(n) {
-  return ["January","February","March","April","May","June",
-    "July","August","September","October","November","December"][n - 1] || "?";
-}
-
-function daysInMonth(month, year) {
-  return new Date(year, month, 0).getDate();
-}
-
-/* ── localStorage email directory ─────────────────────── */
-function loadDirectory() {
-  try { return JSON.parse(localStorage.getItem("payroll_emails") || "{}"); } catch { return {}; }
-}
-function saveDirectory(dir) { localStorage.setItem("payroll_emails", JSON.stringify(dir)); }
+/* ── localStorage ─────────────────────────────────────── */
+function loadDir(){ try{return JSON.parse(localStorage.getItem("payroll_emails")||"{}");} catch{return {};} }
+function saveDir(d){ localStorage.setItem("payroll_emails",JSON.stringify(d)); }
+function getDayFilter(){ return localStorage.getItem("payroll_day_filter")||"all"; }
+function setDayFilter(v){ localStorage.setItem("payroll_day_filter",v); }
 
 /* ── State ────────────────────────────────────────────── */
-let domPortalRows = null;   // raw rows from Source A
-let domPortalByStaff = null; // Map<normKey, {display, rows:[{date,hours}]}>
-let workerFiles = [];        // [{id, fileName, staffName, month, totalHours, daysWorked, error, overridden}]
-let results = [];
-let detectedMonth = null;    // {month, year} from support worker files
-let activeRange = null;      // {start: Date, end: Date, label: string}
+let domByStaff=null; // Map<nkey,{display, shifts:[{date,start,end,hours}]}>
+let workerFiles=[]; // [{id,fileName,staffName,month,monthNum,totalHours,daysWorked,dailyEntries:[{day,hours}],error,warnings,overridden}]
+let results=[];     // [{name,key,hrsA,hrsB,diff,impact,status,statusClass,badgeClass,note,daily:[dayRow]}]
+let activeRange=null;
+let totalDupCount=0, totalDupStaff=0;
 
 /* ================================================================
    SOURCE A — DOM Portal
-   Format: Sheet "Shift_Timesheets" (or first sheet)
-   Row 1: header — A:Date B:Day C:Staff D:Shift ... H:Hours
-   Row 2+: data
+   Cols: A=Date B=Day C=Staff D=Shift E=SleepIn F=Start G=End H=Hours
    ================================================================ */
-async function parseSourceA(file) {
-  const data = await readFile(file);
-  const wb = XLSX.read(data, { type: "array", cellDates: true });
-
-  let sheetName = wb.SheetNames[0];
-  const match = wb.SheetNames.find(s => s.trim().toLowerCase().includes("shift"));
-  if (match) sheetName = match;
-
-  const ws = wb.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
-  if (rows.length < 2) throw new Error("Source A has no data rows.");
-
-  domPortalRows = rows;
-
-  // Build per-staff index with dates
-  const map = new Map(); // normKey → {display, entries:[{date, hours}]}
-
-  for (let i = 1; i < rows.length; i++) {
-    const rawName = normName(rows[i][2]); // Column C = Staff
-    if (!rawName) continue;
-    const key = normKey(rawName);
-    const hours = toNum(rows[i][7]);      // Column H = Hours
-
-    // Parse date from column A
-    let date = null;
-    const rawDate = rows[i][0];
-    if (rawDate instanceof Date) {
-      date = rawDate;
-    } else if (rawDate) {
-      const d = new Date(rawDate);
-      if (!isNaN(d.getTime())) date = d;
-    }
-
-    if (!map.has(key)) map.set(key, { display: rawName, entries: [] });
-    map.get(key).entries.push({ date, hours });
+async function parseSourceA(file){
+  const data=await readFile(file);
+  const wb=XLSX.read(data,{type:"array",cellDates:true});
+  let sn=wb.SheetNames[0];
+  const m=wb.SheetNames.find(s=>s.trim().toLowerCase().includes("shift"));
+  if(m) sn=m;
+  const ws=wb.Sheets[sn];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+  if(rows.length<2) throw new Error("No data rows in Source A.");
+  const map=new Map();
+  for(let i=1;i<rows.length;i++){
+    const name=norm(rows[i][2]); if(!name) continue;
+    const key=nkey(name);
+    let date=null; const rd=rows[i][0];
+    if(rd instanceof Date) date=rd;
+    else if(rd){ const d=new Date(rd); if(!isNaN(d.getTime())) date=d; }
+    const start=rows[i][5], end=rows[i][6], hours=toNum(rows[i][7]);
+    if(!map.has(key)) map.set(key,{display:name,shifts:[]});
+    map.get(key).shifts.push({date,start,end,hours});
   }
-
-  domPortalByStaff = map;
-  return map;
+  domByStaff=map;
 }
 
-/* Sum DOM Portal hours for a staff member within a date range */
-function sumDomPortalHours(key, startDate, endDate) {
-  if (!domPortalByStaff || !domPortalByStaff.has(key)) return null;
-  const entries = domPortalByStaff.get(key).entries;
-  let total = 0;
+function domStaffKeys(){ return domByStaff?[...domByStaff.keys()]:[]; }
+function domDisplay(k){ return domByStaff&&domByStaff.has(k)?domByStaff.get(k).display:k; }
 
-  for (const e of entries) {
-    if (startDate && endDate && e.date) {
-      if (e.date < startDate || e.date > endDate) continue;
-    }
-    total += e.hours;
-  }
-  return round2(total);
+function domShiftsForDate(key,d){
+  if(!domByStaff||!domByStaff.has(key)) return [];
+  const dk=dateKey(d);
+  return domByStaff.get(key).shifts.filter(s=>s.date&&dateKey(s.date)===dk);
 }
 
-/* Get all DOM Portal staff keys */
-function getDomPortalStaffKeys() {
-  if (!domPortalByStaff) return [];
-  return [...domPortalByStaff.keys()];
+function sumDomRange(key,s,e){
+  if(!domByStaff||!domByStaff.has(key)) return null;
+  let t=0;
+  for(const sh of domByStaff.get(key).shifts){
+    if(s&&e&&sh.date){ if(sh.date<s||sh.date>e) continue; }
+    t+=sh.hours;
+  }
+  return r2(t);
 }
 
-function getDomPortalDisplay(key) {
-  if (!domPortalByStaff || !domPortalByStaff.has(key)) return key;
-  return domPortalByStaff.get(key).display;
-}
-
-/* Render Source A preview: staff list with total hours (unfiltered) */
-function renderSourceAPreview() {
-  const el = document.getElementById("preview-a");
-  if (!domPortalByStaff || domPortalByStaff.size === 0) {
-    el.innerHTML = "<p class='muted small'>No staff data found.</p>";
-    return;
-  }
-  const sorted = [...domPortalByStaff.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  let html = "<table><tr><th>Staff</th><th style='text-align:right'>Total Hours</th><th style='text-align:right'>Rows</th></tr>";
-  for (const [key, val] of sorted) {
-    const total = round2(val.entries.reduce((s, e) => s + e.hours, 0));
-    html += `<tr><td class="mono">${esc(val.display)}</td><td class="mono" style="text-align:right">${total}</td><td class="mono" style="text-align:right">${val.entries.length}</td></tr>`;
-  }
-  html += "</table>";
-  el.innerHTML = html;
+function renderPreviewA(){
+  const el=document.getElementById("preview-a");
+  if(!domByStaff||domByStaff.size===0){el.innerHTML="<p class='muted small'>No staff data.</p>";return;}
+  const sorted=[...domByStaff.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  let h="<table><tr><th>Staff</th><th style='text-align:right'>Hours</th><th style='text-align:right'>Shifts</th></tr>";
+  for(const [k,v] of sorted){ const t=r2(v.shifts.reduce((s,e)=>s+e.hours,0)); h+=`<tr><td class="mono">${esc(v.display)}</td><td class="mono" style="text-align:right">${t}</td><td class="mono" style="text-align:right">${v.shifts.length}</td></tr>`; }
+  h+="</table>"; el.innerHTML=h;
 }
 
 /* ================================================================
    SOURCE B — Support Worker Timesheets
-   One file per worker. Fixed structure:
-   - Sheet: "Timesheet " (may have trailing space)
-   - B2: staff name
-   - B5: month
-   - Row 6: header (Date | Day | Start Time | Finish Time | No of Hrs | ...)
-   - Row 8+: data (col A = ordinal, col E = hours)
-   - Row with "Total" in col A = total row (skip)
    ================================================================ */
-function findTimesheetSheet(wb) {
-  // Try exact, then fuzzy match
-  for (const name of wb.SheetNames) {
-    if (name.trim().toLowerCase() === "timesheet") return name;
-  }
-  for (const name of wb.SheetNames) {
-    if (name.trim().toLowerCase().includes("timesheet")) return name;
-  }
+function findTSSheet(wb){
+  for(const n of wb.SheetNames) if(n.trim().toLowerCase()==="timesheet") return n;
+  for(const n of wb.SheetNames) if(n.trim().toLowerCase().includes("timesheet")) return n;
   return null;
 }
 
-async function parseWorkerFile(file) {
-  const result = { id: crypto.randomUUID(), fileName: file.name, staffName: "", month: "", monthNum: null, totalHours: 0, daysWorked: 0, error: null, overridden: false };
+async function parseWorkerFile(file){
+  const res={id:crypto.randomUUID(),fileName:file.name,staffName:"",month:"",monthNum:null,totalHours:0,daysWorked:0,dailyEntries:[],error:null,warnings:[],overridden:false};
+  try{
+    const data=await readFile(file);
+    const wb=XLSX.read(data,{type:"array",raw:false});
+    const sn=findTSSheet(wb);
+    if(!sn){res.error="Couldn't find a 'Timesheet' sheet in this file.";return res;}
+    const ws=wb.Sheets[sn];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
 
-  try {
-    const data = await readFile(file);
-    const wb = XLSX.read(data, { type: "array", raw: false });
+    const rawName=rows[1]?norm(rows[1][1]):"";
+    if(!rawName) res.error="Couldn't detect staff name — please use Override to set it.";
+    res.staffName=rawName;
 
-    const sheetName = findTimesheetSheet(wb);
-    if (!sheetName) {
-      result.error = "Couldn't find a 'Timesheet' sheet in this file.";
-      return result;
+    let mStr="";
+    if(rows[4]&&norm(rows[4][1])) mStr=norm(rows[4][1]);
+    else if(rows[3]&&norm(rows[3][1])) mStr=norm(rows[3][1]);
+    res.month=mStr; res.monthNum=parseMon(mStr);
+    if(!res.monthNum&&!res.error) res.error="Couldn't detect month — please use Override.";
+
+    // find header row
+    let hdr=5;
+    for(let i=3;i<Math.min(rows.length,10);i++){
+      if(String(rows[i]&&rows[i][0]||"").toLowerCase().trim()==="date"){hdr=i;break;}
     }
+    let ds=hdr+1;
+    if(rows[ds]){const c=String(rows[ds][0]||"").trim(); if(c&&!c.match(/^\d/)) ds++;}
 
-    const ws = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false });
+    let tot=0,dw=0;
+    for(let i=ds;i<rows.length;i++){
+      const row=rows[i]; if(!row) continue;
+      const cA=String(row[0]||"").trim().toLowerCase();
+      if(cA.startsWith("total")||cA.startsWith("signed")) break;
+      const day=parseOrd(cA); if(day===null) continue;
 
-    // Extract staff name from B2 (row index 1, col index 1)
-    const rawName = rows[1] ? normName(rows[1][1]) : "";
-    if (!rawName) {
-      result.error = "Couldn't detect staff name — please use Override to set it.";
-    }
-    result.staffName = rawName;
-
-    // Extract month from B5 (row index 4, col index 1)
-    // But also check B4 in case layout varies
-    let monthStr = "";
-    if (rows[4] && normName(rows[4][1])) monthStr = normName(rows[4][1]);
-    else if (rows[3] && normName(rows[3][1])) monthStr = normName(rows[3][1]);
-    result.month = monthStr;
-    result.monthNum = parseMonth(monthStr);
-    if (!result.monthNum && !result.error) {
-      result.error = "Couldn't detect month — please use Override.";
-    }
-
-    // Find header row (row with "Date" in col A and "No of Hrs" or "Hrs" in col E area)
-    let headerIdx = 5; // default row 6 (0-indexed = 5)
-    for (let i = 3; i < Math.min(rows.length, 10); i++) {
-      const cellA = String(rows[i] && rows[i][0] || "").toLowerCase().trim();
-      if (cellA === "date") { headerIdx = i; break; }
-    }
-
-    // Parse data rows after header (skip header+1 if it's a continuation row like row 7)
-    let dataStart = headerIdx + 1;
-    // Check if row after header is also a header continuation (merged cells with sub-labels)
-    if (rows[dataStart]) {
-      const firstCell = String(rows[dataStart][0] || "").trim().toLowerCase();
-      // If it doesn't look like an ordinal (1st, 2nd...) or number, skip it
-      if (firstCell && !firstCell.match(/^\d/) && firstCell !== "") {
-        dataStart++;
+      // Check if ordinal is valid for month
+      if(res.monthNum){
+        const yr=new Date().getFullYear();
+        const maxD=dim(res.monthNum,yr);
+        if(day>maxD){ res.warnings.push(`Skipped "${String(row[0]).trim()}" — ${MNAMES[res.monthNum-1]} only has ${maxD} days.`); continue; }
       }
+
+      const hv=row[4]; if(hv===""||hv==null) continue;
+      const hrs=toNum(hv); if(hrs<=0) continue;
+      res.dailyEntries.push({day,hours:hrs});
+      tot+=hrs; dw++;
     }
-
-    let totalHours = 0;
-    let daysWorked = 0;
-
-    for (let i = dataStart; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row) continue;
-
-      const colA = String(row[0] || "").trim().toLowerCase();
-
-      // Stop at "Total" row or "Signed" row
-      if (colA.startsWith("total") || colA.startsWith("signed")) break;
-
-      // Skip if col A is empty or doesn't start with a digit (ordinals: "1st", "2nd", etc.)
-      if (!colA.match(/^\d/)) continue;
-
-      // Col E (index 4) = No of Hrs
-      const hrsVal = row[4];
-      if (hrsVal === "" || hrsVal == null) continue;
-
-      const hrs = toNum(hrsVal);
-      if (hrs > 0) {
-        totalHours += hrs;
-        daysWorked++;
-      }
-    }
-
-    result.totalHours = round2(totalHours);
-    result.daysWorked = daysWorked;
-
-    if (totalHours === 0 && !result.error) {
-      result.error = "No hours data found.";
-    }
-
-  } catch (e) {
-    result.error = "Failed to parse file: " + e.message;
-  }
-
-  return result;
+    res.totalHours=r2(tot); res.daysWorked=dw;
+    if(tot===0&&!res.error) res.error="No hours data found.";
+  }catch(e){res.error="Failed to parse: "+e.message;}
+  return res;
 }
 
-/* ── Worker cards rendering ───────────────────────────── */
-function renderWorkerCards() {
-  const container = document.getElementById("worker-cards");
-  if (workerFiles.length === 0) { container.innerHTML = ""; return; }
-
-  let html = "";
-  workerFiles.forEach((w, i) => {
-    const hasErr = !!w.error;
-    html += `<div class="worker-card ${hasErr ? 'has-error' : ''}">
-      <div class="wc-header">
-        <span class="wc-name mono">${esc(w.staffName || '(unknown)')}</span>
-        <span class="wc-file">${esc(w.fileName)}</span>
-      </div>
-      <div class="wc-stats">
-        <span>Month: <strong>${esc(w.month || '?')}</strong></span>
-        <span>Hours: <strong class="mono">${w.totalHours}</strong></span>
-        <span>Days worked: <strong class="mono">${w.daysWorked}</strong></span>
-      </div>
-      ${hasErr ? `<div class="wc-error">${esc(w.error)}</div>` : ""}
-      <div class="wc-actions">
-        <button class="btn btn-sm" onclick="openOverride(${i})">✏️ Override</button>
-        <button class="btn btn-sm btn-danger" onclick="removeWorker(${i})">✕ Remove</button>
-      </div>
+/* ── Worker cards ─────────────────────────────────────── */
+function renderWorkerCards(){
+  const c=document.getElementById("worker-cards");
+  if(!workerFiles.length){c.innerHTML="";updateMonth();return;}
+  let h="";
+  workerFiles.forEach((w,i)=>{
+    const hasErr=!!w.error;
+    let warnHtml="";
+    if(w.warnings&&w.warnings.length) warnHtml=w.warnings.map(x=>`<div class="wc-warn">⚠ ${esc(x)}</div>`).join("");
+    h+=`<div class="worker-card ${hasErr?'has-error':''}">
+      <div class="wc-header"><span class="wc-name mono">${esc(w.staffName||'(unknown)')}</span><span class="wc-file">${esc(w.fileName)}</span></div>
+      <div class="wc-stats"><span>Month: <strong>${esc(w.month||'?')}</strong></span><span>Hours: <strong class="mono">${w.totalHours}</strong></span><span>Days: <strong class="mono">${w.daysWorked}</strong></span></div>
+      ${hasErr?`<div class="wc-error">${esc(w.error)}</div>`:""}${warnHtml}
+      <div class="wc-actions"><button class="btn btn-sm" onclick="openOvr(${i})">✏️ Override</button><button class="btn btn-sm btn-danger" onclick="rmWorker(${i})">✕ Remove</button></div>
     </div>`;
   });
-  container.innerHTML = html;
-
-  updateDetectedMonth();
+  c.innerHTML=h; updateMonth();
 }
-
-window.removeWorker = function(idx) {
-  workerFiles.splice(idx, 1);
-  renderWorkerCards();
-  checkReady();
-};
+window.rmWorker=function(i){workerFiles.splice(i,1);renderWorkerCards();};
 
 /* ── Override modal ───────────────────────────────────── */
-let overrideIdx = -1;
-
-window.openOverride = function(idx) {
-  overrideIdx = idx;
-  const w = workerFiles[idx];
-  document.getElementById("ovr-name").value = w.staffName;
-  document.getElementById("ovr-month").value = w.month;
-  document.getElementById("ovr-hours").value = w.totalHours;
-  document.getElementById("override-modal").classList.add("open");
-};
-
-document.getElementById("ovr-cancel").addEventListener("click", () => {
-  document.getElementById("override-modal").classList.remove("open");
+let ovrIdx=-1;
+window.openOvr=function(i){ovrIdx=i;const w=workerFiles[i];document.getElementById("ovr-name").value=w.staffName;document.getElementById("ovr-month").value=w.month;document.getElementById("ovr-hours").value=w.totalHours;document.getElementById("override-modal").classList.add("open");};
+document.getElementById("ovr-cancel").addEventListener("click",()=>document.getElementById("override-modal").classList.remove("open"));
+document.getElementById("ovr-save").addEventListener("click",()=>{
+  if(ovrIdx<0) return; const w=workerFiles[ovrIdx];
+  w.staffName=norm(document.getElementById("ovr-name").value);
+  w.month=document.getElementById("ovr-month").value.trim(); w.monthNum=parseMon(w.month);
+  w.totalHours=r2(parseFloat(document.getElementById("ovr-hours").value)||0);
+  w.overridden=true; w.error=null;
+  document.getElementById("override-modal").classList.remove("open"); renderWorkerCards();
 });
 
-document.getElementById("ovr-save").addEventListener("click", () => {
-  if (overrideIdx < 0 || overrideIdx >= workerFiles.length) return;
-  const w = workerFiles[overrideIdx];
-  w.staffName = normName(document.getElementById("ovr-name").value);
-  w.month = document.getElementById("ovr-month").value.trim();
-  w.monthNum = parseMonth(w.month);
-  w.totalHours = round2(parseFloat(document.getElementById("ovr-hours").value) || 0);
-  w.overridden = true;
-  w.error = null; // clear error after manual override
-  document.getElementById("override-modal").classList.remove("open");
-  renderWorkerCards();
-  checkReady();
-});
-
-/* ── Month detection from worker files ────────────────── */
-function updateDetectedMonth() {
-  const months = new Set();
-  workerFiles.forEach(w => { if (w.monthNum) months.add(w.monthNum); });
-
-  const bar = document.getElementById("date-range-bar");
-  const label = document.getElementById("date-range-label");
-  const warning = document.getElementById("month-warning");
-
-  if (months.size === 0) {
-    bar.classList.add("hidden");
-    detectedMonth = null;
-    activeRange = null;
-    return;
-  }
-
-  // Guess year — use current year, or next year if month is in the future context
-  const now = new Date();
-  const year = now.getFullYear();
-
-  if (months.size === 1) {
-    const m = [...months][0];
-    detectedMonth = { month: m, year };
-    const days = daysInMonth(m, year);
-    const start = new Date(year, m - 1, 1);
-    const end = new Date(year, m - 1, days, 23, 59, 59);
-    activeRange = { start, end, label: `${monthName(m)} 1 — ${monthName(m)} ${days}, ${year}` };
-    label.textContent = activeRange.label;
-    warning.classList.add("hidden");
-  } else {
-    // Multiple months
-    const sorted = [...months].sort((a, b) => a - b);
-    const first = sorted[0];
-    detectedMonth = { month: first, year };
-    const days = daysInMonth(first, year);
-    const start = new Date(year, first - 1, 1);
-    const end = new Date(year, first - 1, days, 23, 59, 59);
-    activeRange = { start, end, label: `${monthName(first)} 1 — ${monthName(first)} ${days}, ${year}` };
-    label.textContent = activeRange.label;
-    warning.textContent = `⚠ Files cover different months (${sorted.map(monthName).join(", ")}). Comparing against ${monthName(first)} only.`;
-    warning.classList.remove("hidden");
-  }
-
+/* ── Month detection ──────────────────────────────────── */
+function updateMonth(){
+  const mons=new Set(); workerFiles.forEach(w=>{if(w.monthNum)mons.add(w.monthNum);});
+  const bar=document.getElementById("date-range-bar"),lbl=document.getElementById("date-range-label"),warn=document.getElementById("month-warning");
+  if(!mons.size){bar.classList.add("hidden");activeRange=null;return;}
+  // Infer year from DOM Portal dates if available
+  let year=new Date().getFullYear();
+  if(domByStaff){ for(const[,v]of domByStaff) for(const s of v.shifts) if(s.date){year=s.date.getFullYear();break;} }
+  const sorted=[...mons].sort((a,b)=>a-b);
+  const m=sorted[0], days=dim(m,year);
+  activeRange={start:new Date(year,m-1,1),end:new Date(year,m-1,days,23,59,59),month:m,year,label:`${MNAMES[m-1]} 1 — ${MNAMES[m-1]} ${days}, ${year}`};
+  lbl.textContent=activeRange.label;
+  if(sorted.length>1){warn.textContent=`⚠ Files cover different months (${sorted.map(i=>MNAMES[i-1]).join(", ")}). Comparing against ${MNAMES[m-1]} only.`;warn.classList.remove("hidden");}
+  else warn.classList.add("hidden");
   bar.classList.remove("hidden");
 }
 
 /* ── Upload handlers ──────────────────────────────────── */
-const fileA = document.getElementById("file-a");
-const fileB = document.getElementById("file-b");
-const zoneA = document.getElementById("zone-a");
-const zoneB = document.getElementById("zone-b");
-
-[zoneA, zoneB].forEach(z => {
-  z.addEventListener("dragover", e => { e.preventDefault(); z.classList.add("dragover"); });
-  z.addEventListener("dragleave", () => z.classList.remove("dragover"));
-  z.addEventListener("drop", e => { e.preventDefault(); z.classList.remove("dragover"); });
+const zA=document.getElementById("zone-a"),zB=document.getElementById("zone-b");
+[zA,zB].forEach(z=>{z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("dragover");});z.addEventListener("dragleave",()=>z.classList.remove("dragover"));z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("dragover");});});
+document.getElementById("file-a").addEventListener("change",async function(){
+  const f=this.files[0]; if(!f) return;
+  document.getElementById("fname-a").textContent=f.name;
+  try{await parseSourceA(f);zA.classList.add("loaded");renderPreviewA();}catch(e){document.getElementById("fname-a").textContent="Error: "+e.message;}
+});
+document.getElementById("file-b").addEventListener("change",async function(){
+  const files=this.files; if(!files||!files.length) return;
+  document.getElementById("fname-b").textContent=`${files.length} file${files.length>1?'s':''} selected`;
+  for(const f of files){if(workerFiles.some(w=>w.fileName===f.name)) continue; workerFiles.push(await parseWorkerFile(f));}
+  zB.classList.add("loaded"); renderWorkerCards();
 });
 
-// Source A
-fileA.addEventListener("change", async () => {
-  const f = fileA.files[0]; if (!f) return;
-  document.getElementById("fname-a").textContent = f.name;
-  try {
-    await parseSourceA(f);
-    zoneA.classList.add("loaded");
-    renderSourceAPreview();
-    checkReady();
-  } catch (e) {
-    document.getElementById("fname-a").textContent = "Error: " + e.message;
-  }
-});
+/* ================================================================
+   COMPARE — builds per-staff summary AND per-day breakdown
+   ================================================================ */
+document.getElementById("btn-compare").addEventListener("click",compare);
 
-// Source B — multiple files
-fileB.addEventListener("change", async () => {
-  const files = fileB.files;
-  if (!files || files.length === 0) return;
-
-  document.getElementById("fname-b").textContent = `${files.length} file${files.length > 1 ? 's' : ''} selected`;
-
-  for (const f of files) {
-    // Skip if already loaded (by filename)
-    if (workerFiles.some(w => w.fileName === f.name)) continue;
-    const parsed = await parseWorkerFile(f);
-    workerFiles.push(parsed);
-  }
-
-  zoneB.classList.add("loaded");
-  renderWorkerCards();
-  checkReady();
-});
-
-/* ── Compare readiness check ──────────────────────────── */
-function checkReady() {
-  // Just update UI hints — actual validation happens on click
-  const errEl = document.getElementById("compare-error");
-  errEl.classList.add("hidden");
-}
-
-/* ── Compare ──────────────────────────────────────────── */
-document.getElementById("btn-compare").addEventListener("click", compare);
-
-function compare() {
-  const errEl = document.getElementById("compare-error");
-
-  if (!domPortalByStaff) {
-    errEl.textContent = "Upload Source A (DOM Portal) first.";
-    errEl.classList.remove("hidden");
-    return;
-  }
-  if (workerFiles.length === 0) {
-    errEl.textContent = "Upload at least one Source B (Support Worker) file.";
-    errEl.classList.remove("hidden");
-    return;
-  }
-  if (!activeRange) {
-    errEl.textContent = "No date range detected — check that worker files have a valid month.";
-    errEl.classList.remove("hidden");
-    return;
-  }
+function compare(){
+  const errEl=document.getElementById("compare-error");
+  if(!domByStaff){errEl.textContent="Upload Source A (DOM Portal) first.";errEl.classList.remove("hidden");return;}
+  if(!workerFiles.length){errEl.textContent="Upload at least one Source B file.";errEl.classList.remove("hidden");return;}
+  if(!activeRange){errEl.textContent="No date range detected — check worker files have a valid month.";errEl.classList.remove("hidden");return;}
   errEl.classList.add("hidden");
 
-  // Build Source B map: normKey → {display, hours}
-  const srcB = new Map();
-  for (const w of workerFiles) {
-    if (!w.staffName) continue;
-    const key = normKey(w.staffName);
-    // If duplicate, sum (shouldn't happen but handle gracefully)
-    if (srcB.has(key)) {
-      srcB.get(key).hours += w.totalHours;
-    } else {
-      srcB.set(key, { display: w.staffName, hours: w.totalHours });
-    }
+  // Build Source B maps
+  const srcBTotal=new Map(); // nkey → {display,hours}
+  const srcBDaily=new Map(); // nkey → Map<dayNum,hours>
+  for(const w of workerFiles){
+    if(!w.staffName) continue;
+    const k=nkey(w.staffName);
+    if(!srcBTotal.has(k)) srcBTotal.set(k,{display:w.staffName,hours:0});
+    srcBTotal.get(k).hours+=w.totalHours;
+    if(!srcBDaily.has(k)) srcBDaily.set(k,new Map());
+    const dm=srcBDaily.get(k);
+    for(const e of w.dailyEntries) dm.set(e.day,(dm.get(e.day)||0)+e.hours);
   }
 
-  // Collect all staff keys from both sources
-  const allKeys = new Set([...getDomPortalStaffKeys(), ...srcB.keys()]);
-  results = [];
+  const allKeys=new Set([...domStaffKeys(),...srcBTotal.keys()]);
+  results=[]; totalDupCount=0; const dupStaffSet=new Set();
 
-  for (const key of allKeys) {
-    const hrsA = sumDomPortalHours(key, activeRange.start, activeRange.end);
-    const hrsB = srcB.has(key) ? srcB.get(key).hours : null;
-    const displayName = srcB.has(key) ? srcB.get(key).display : getDomPortalDisplay(key);
+  for(const key of allKeys){
+    const hrsA=sumDomRange(key,activeRange.start,activeRange.end);
+    const hrsB=srcBTotal.has(key)?r2(srcBTotal.get(key).hours):null;
+    const display=srcBTotal.has(key)?srcBTotal.get(key).display:domDisplay(key);
 
-    let diff = 0, impact = 0, status = "", statusClass = "", badgeClass = "";
+    // Build per-day breakdown
+    const daily=[];
+    const numDays=dim(activeRange.month,activeRange.year);
+    const subMap=srcBDaily.get(key)||new Map();
 
-    if (hrsA === null || hrsA === 0) {
-      // Not in DOM Portal (or zero hours in range)
-      if (hrsB !== null) {
-        diff = hrsB;
-        impact = round2(Math.abs(hrsB) * RATE);
-        status = "Submitted but not in DOM Portal";
-        statusClass = "status-missing";
-        badgeClass = "badge-missing";
+    for(let d=1;d<=numDays;d++){
+      const dt=new Date(activeRange.year,activeRange.month-1,d);
+      const shifts=domShiftsForDate(key,dt);
+      const domTotal=r2(shifts.reduce((s,sh)=>s+sh.hours,0));
+      const subHrs=subMap.has(d)?r2(subMap.get(d)):null;
+
+      // Duplicate detection: identical date+start+end+hours
+      let dupCount=0;
+      if(shifts.length>1){
+        const seen=new Map();
+        for(const sh of shifts){
+          const sig=`${fmtTime(sh.start)}-${fmtTime(sh.end)}-${sh.hours}`;
+          seen.set(sig,(seen.get(sig)||0)+1);
+        }
+        for(const[,c] of seen) if(c>1) dupCount+=c-1;
       }
-    } else if (hrsB === null) {
-      diff = round2(0 - hrsA);
-      impact = round2(hrsA * RATE);
-      status = "No submission";
-      statusClass = "status-missing";
-      badgeClass = "badge-missing";
-    } else {
-      diff = round2(hrsB - hrsA);
-      impact = round2(Math.abs(diff) * RATE);
-      if (Math.abs(diff) <= DISC_THRESHOLD) {
-        status = "Match";
-        statusClass = "status-match";
-        badgeClass = "badge-match";
-      } else if (diff > 0) {
-        status = "Over-claiming";
-        statusClass = "status-mismatch";
-        badgeClass = "badge-over";
-      } else {
-        status = "Under-claimed";
-        statusClass = "status-mismatch";
-        badgeClass = "badge-under";
+      if(dupCount>0){totalDupCount+=dupCount;dupStaffSet.add(key);}
+
+      let status,cls;
+      if(dupCount>0){status="Duplicate shifts — review";cls="day-dup";}
+      else if(domTotal===0&&subHrs===null){continue;} // skip empty days
+      else if(domTotal===0&&(subHrs===null||subHrs===0)){continue;}
+      else if(domTotal>0&&(subHrs===null||subHrs===0)){status="Missing in submission";cls="day-missing";}
+      else if(domTotal===0&&subHrs>0){status="Missing in DOM Portal";cls="day-missing";}
+      else if(Math.abs(domTotal-(subHrs||0))<=DISC){status="Match";cls="day-match";}
+      else{status="Mismatch";cls="day-mismatch";}
+
+      // Format shifts string
+      let shiftsStr="—";
+      if(shifts.length){
+        shiftsStr=shifts.map(sh=>`${fmtTime(sh.start)}–${fmtTime(sh.end)} (${sh.hours}h)`).join(" + ");
       }
+
+      daily.push({date:dt,day:d,shifts,shiftsStr,domTotal,subHrs,diff:r2(domTotal-(subHrs||0)),status,cls,dupCount,dupShifts:dupCount>0?shifts:[],note:""});
     }
 
-    if (status) {
-      results.push({ name: displayName, key, hrsA: hrsA !== null ? hrsA : null, hrsB: hrsB !== null ? hrsB : null, diff, impact, status, statusClass, badgeClass, note: "" });
+    // Staff-level summary
+    let diff=0,impact=0,status="",statusClass="",badgeClass="";
+    if(hrsA===null||hrsA===0){
+      if(hrsB!==null&&hrsB>0){diff=hrsB;impact=r2(hrsB*RATE);status="Submitted but not in DOM Portal";statusClass="status-missing";badgeClass="badge-missing";}
+      else continue;
+    }else if(hrsB===null){
+      diff=r2(0-hrsA);impact=r2(hrsA*RATE);status="No submission";statusClass="status-missing";badgeClass="badge-missing";
+    }else{
+      diff=r2(hrsB-hrsA);impact=r2(Math.abs(diff)*RATE);
+      if(Math.abs(diff)<=DISC){status="Match";statusClass="status-match";badgeClass="badge-match";}
+      else if(diff>0){status="Over-claiming";statusClass="status-mismatch";badgeClass="badge-over";}
+      else{status="Under-claimed";statusClass="status-mismatch";badgeClass="badge-under";}
     }
+    results.push({name:display,key,hrsA,hrsB,diff,impact,status,statusClass,badgeClass,note:"",daily});
   }
-
-  // Sort: discrepancies first by £ impact desc, then matches
-  results.sort((a, b) => {
-    const aMatch = a.status === "Match" ? 1 : 0;
-    const bMatch = b.status === "Match" ? 1 : 0;
-    if (aMatch !== bMatch) return aMatch - bMatch;
-    if (aMatch === 0) return b.impact - a.impact; // largest £ impact first
-    return a.name.localeCompare(b.name);
-  });
-
-  renderResults();
-  populateEmailDirectory();
+  totalDupStaff=dupStaffSet.size;
+  results.sort((a,b)=>{const am=a.status==="Match"?1:0,bm=b.status==="Match"?1:0;if(am!==bm)return am-bm;if(!am)return b.impact-a.impact;return a.name.localeCompare(b.name);});
+  renderResults();populateDir();
   document.getElementById("results-section").classList.remove("hidden");
   document.getElementById("btn-export").classList.remove("hidden");
 }
 
 /* ── Render results ───────────────────────────────────── */
-function renderResults() {
-  const tbody = document.getElementById("results-body");
+function renderResults(){
+  const tbody=document.getElementById("results-body");
+  const discC=results.filter(r=>r.status!=="Match").length;
+  const totImp=r2(results.filter(r=>r.status!=="Match").reduce((s,r)=>s+r.impact,0));
 
-  const discCount = results.filter(r => r.status !== "Match").length;
-  const totalImpact = round2(results.filter(r => r.status !== "Match").reduce((s, r) => s + r.impact, 0));
+  let banner=`<strong>${discC} discrepanc${discC===1?"y":"ies"}</strong> found`;
+  if(discC>0) banner+=`, total £ impact: <strong class="mono">£${totImp.toFixed(2)}</strong>`;
+  banner+=` &nbsp;·&nbsp; ${results.length} staff compared`;
+  if(totalDupCount>0) banner+=`<span class="dup-warn">⚠ ${totalDupCount} duplicate DOM Portal entr${totalDupCount===1?"y":"ies"} detected across ${totalDupStaff} staff — review before sending emails</span>`;
+  document.getElementById("summary-banner").innerHTML=banner;
 
-  document.getElementById("summary-banner").innerHTML =
-    `<strong>${discCount} discrepanc${discCount === 1 ? "y" : "ies"}</strong> found` +
-    (discCount > 0 ? `, total £ impact: <strong class="mono">£${totalImpact.toFixed(2)}</strong>` : "") +
-    ` &nbsp;·&nbsp; ${results.length} staff compared`;
+  const filter=getDayFilter();
+  let h="";
+  results.forEach((r,i)=>{
+    const fA=r.hrsA!==null?r.hrsA.toFixed(2):"—",fB=r.hrsB!==null?r.hrsB.toFixed(2):"—";
+    const fD=(r.diff>=0?"+":"")+r.diff.toFixed(2),fI="£"+r.impact.toFixed(2);
+    const isDisc=r.status!=="Match";
+    const hasDaily=r.daily&&r.daily.length>0;
 
-  let html = "";
-  results.forEach((r, i) => {
-    const fmtA = r.hrsA !== null ? r.hrsA.toFixed(2) : "—";
-    const fmtB = r.hrsB !== null ? r.hrsB.toFixed(2) : "—";
-    const fmtDiff = (r.diff >= 0 ? "+" : "") + r.diff.toFixed(2);
-    const fmtImpact = "£" + r.impact.toFixed(2);
-    const isDisc = r.status !== "Match";
-
-    html += `<tr class="${r.statusClass}">
-      <td class="mono">${esc(r.name)}</td>
-      <td class="mono num">${fmtA}</td>
-      <td class="mono num">${fmtB}</td>
-      <td class="mono num">${fmtDiff}</td>
-      <td class="mono num">${fmtImpact}</td>
+    h+=`<tr class="${r.statusClass}">
+      <td>${hasDaily?`<span class="expand-btn" data-idx="${i}" onclick="toggleDaily(${i})">▶</span>`:""}</td>
+      <td class="mono">${esc(r.name)}</td><td class="mono num">${fA}</td><td class="mono num">${fB}</td>
+      <td class="mono num">${fD}</td><td class="mono num">${fI}</td>
       <td><span class="status-badge ${r.badgeClass}">${r.status}</span></td>
       <td><textarea data-idx="${i}" class="note-input" placeholder="Add note...">${esc(r.note)}</textarea></td>
-      <td>${isDisc ? `<button class="btn btn-sm" onclick="emailStaff(${i})">Email</button>` : ""}</td>
+      <td>${isDisc?`<button class="btn btn-sm" onclick="emailStaff(${i})">Email</button>`:""}</td>
     </tr>`;
-  });
-  tbody.innerHTML = html;
 
-  tbody.querySelectorAll(".note-input").forEach(ta => {
-    ta.addEventListener("input", () => {
-      results[parseInt(ta.dataset.idx)].note = ta.value;
-    });
+    // Daily breakdown row (hidden by default)
+    if(hasDaily){
+      h+=`<tr class="daily-row"><td colspan="9"><div class="daily-wrap" id="daily-${i}"><div class="daily-inner">`;
+      h+=`<div class="filter-pills"><span class="pill ${filter==="mismatches"?"active":""}" onclick="setFilter('mismatches',${i})">Mismatches only</span><span class="pill ${filter==="all"?"active":""}" onclick="setFilter('all',${i})">All days</span></div>`;
+      h+=`<table class="day-table"><thead><tr><th>Date</th><th>DOM Portal shifts</th><th class="num">DOM hrs</th><th class="num">Submitted</th><th class="num">Diff</th><th>Status</th><th>Note</th></tr></thead><tbody>`;
+      r.daily.forEach((dd,di)=>{
+        const hide=(filter==="mismatches"&&dd.cls==="day-match")?"filter-hidden":"";
+        const fSub=dd.subHrs!==null?dd.subHrs.toFixed(2):"—";
+        const fDiff=(dd.diff>=0?"+":"")+dd.diff.toFixed(2);
+        let extra="";
+        if(dd.dupCount>0) extra=`<br><span class="dup-link" onclick="toggleDup(${i},${di})">🔍 ${dd.dupCount} duplicate${dd.dupCount>1?"s":""}</span><div class="dup-popover hidden" id="dup-${i}-${di}"><table><tr><th>Start</th><th>End</th><th>Hours</th></tr>${dd.dupShifts.map(s=>`<tr><td class="mono">${fmtTime(s.start)}</td><td class="mono">${fmtTime(s.end)}</td><td class="mono">${s.hours}</td></tr>`).join("")}</table></div>`;
+        h+=`<tr class="${dd.cls} ${hide}"><td class="mono">${fmtDate(dd.date)}</td><td class="mono" style="font-size:0.72rem">${esc(dd.shiftsStr)}${extra}</td><td class="mono num">${dd.domTotal.toFixed(2)}</td><td class="mono num">${fSub}</td><td class="mono num">${fDiff}</td><td><span class="status-badge badge-${dd.cls.replace("day-","")}">${dd.status}</span></td><td><textarea class="day-note" data-ri="${i}" data-di="${di}" placeholder="...">${esc(dd.note)}</textarea></td></tr>`;
+      });
+      h+=`</tbody></table></div></div></td></tr>`;
+    }
   });
+  tbody.innerHTML=h;
+  tbody.querySelectorAll(".note-input").forEach(ta=>ta.addEventListener("input",()=>{results[parseInt(ta.dataset.idx)].note=ta.value;}));
+  tbody.querySelectorAll(".day-note").forEach(ta=>ta.addEventListener("input",()=>{results[parseInt(ta.dataset.ri)].daily[parseInt(ta.dataset.di)].note=ta.value;}));
 }
+
+window.toggleDaily=function(i){
+  const wrap=document.getElementById("daily-"+i);
+  const btn=document.querySelector(`.expand-btn[data-idx="${i}"]`);
+  if(!wrap) return;
+  wrap.classList.toggle("open"); btn.classList.toggle("open");
+};
+
+window.setFilter=function(mode,idx){
+  setDayFilter(mode);
+  // Re-render just the pills and row visibility
+  document.querySelectorAll(".daily-inner").forEach(inner=>{
+    inner.querySelectorAll(".pill").forEach(p=>{p.classList.toggle("active",p.textContent.toLowerCase().includes(mode==="mismatches"?"mismatches":"all"));});
+    inner.querySelectorAll(".day-match").forEach(tr=>{tr.classList.toggle("filter-hidden",mode==="mismatches");});
+  });
+};
+
+window.toggleDup=function(ri,di){
+  const el=document.getElementById(`dup-${ri}-${di}`);
+  if(el) el.classList.toggle("hidden");
+};
 
 /* ── Email directory ──────────────────────────────────── */
-function populateEmailDirectory() {
-  const dir = loadDirectory();
-  results.forEach(r => { if (!(r.name in dir)) dir[r.name] = ""; });
-  saveDirectory(dir);
-  renderDirectory();
+function populateDir(){const d=loadDir();results.forEach(r=>{if(!(r.name in d))d[r.name]="";});saveDir(d);renderDir();}
+function renderDir(){
+  const d=loadDir(),body=document.getElementById("dir-body");
+  let h="";Object.keys(d).sort().forEach(name=>{
+    h+=`<div class="directory-row"><span class="dir-name mono">${esc(name)}</span><input type="email" value="${esc(d[name])}" data-name="${esc(name)}" class="dir-email" placeholder="email@example.com"><button class="btn btn-sm" onclick="saveDirE(this)">Save</button><button class="btn btn-sm" onclick="rmDirE('${esc(name)}')">✕</button></div>`;
+  });body.innerHTML=h;
 }
+document.getElementById("dir-toggle").addEventListener("click",()=>{const b=document.getElementById("dir-body"),t=document.getElementById("dir-toggle");b.classList.toggle("open");t.textContent=b.classList.contains("open")?"▼ Staff Email Directory":"▶ Staff Email Directory";});
+window.saveDirE=function(btn){const inp=btn.closest(".directory-row").querySelector(".dir-email");const d=loadDir();d[inp.dataset.name]=inp.value.trim();saveDir(d);};
+window.rmDirE=function(n){const d=loadDir();delete d[n];saveDir(d);renderDir();};
 
-function renderDirectory() {
-  const dir = loadDirectory();
-  const body = document.getElementById("dir-body");
-  const names = Object.keys(dir).sort();
+/* ── Email staff (per-day details) ────────────────────── */
+window.emailStaff=function(idx){
+  const r=results[idx],d=loadDir(),email=d[r.name]||"";
+  const period=document.getElementById("pay-period").value||"[pay period]";
+  const firstName=r.name.split(" ")[0];
 
-  let html = "";
-  names.forEach(name => {
-    html += `<div class="directory-row">
-      <span class="dir-name mono">${esc(name)}</span>
-      <input type="email" value="${esc(dir[name])}" data-name="${esc(name)}" class="dir-email" placeholder="email@example.com">
-      <button class="btn btn-sm" onclick="saveDirEntry(this)">Save</button>
-      <button class="btn btn-sm" onclick="removeDirEntry('${esc(name)}')">✕</button>
-    </div>`;
-  });
-  body.innerHTML = html;
-}
+  // Build per-day bullet list (non-match days only)
+  const problems=(r.daily||[]).filter(dd=>dd.cls!=="day-match");
+  let bullets="";
+  if(problems.length){
+    bullets="\n"+problems.map(dd=>{
+      let line=`• ${fmtDate(dd.date)} — `;
+      if(dd.status==="Missing in submission") line+=`DOM Portal shows ${dd.domTotal}h (${dd.shiftsStr}), you submitted 0h.`;
+      else if(dd.status==="Missing in DOM Portal") line+=`DOM Portal shows nothing, you submitted ${dd.subHrs}h.`;
+      else if(dd.status==="Duplicate shifts — review") line+=`DOM Portal has duplicate shifts logged (${dd.shiftsStr}) — may be a recording error on our end.`;
+      else line+=`DOM Portal shows ${dd.domTotal}h (${dd.shiftsStr}), you submitted ${dd.subHrs}h.`;
+      if(dd.note) line+=` [${dd.note}]`;
+      return line;
+    }).join("\n")+"\n";
+  }
 
-document.getElementById("dir-toggle").addEventListener("click", () => {
-  const body = document.getElementById("dir-body");
-  const toggle = document.getElementById("dir-toggle");
-  body.classList.toggle("open");
-  toggle.textContent = body.classList.contains("open") ? "▼ Staff Email Directory" : "▶ Staff Email Directory";
-});
+  const fDiff=Math.abs(r.diff).toFixed(2),fImp="£"+r.impact.toFixed(2);
 
-window.saveDirEntry = function(btn) {
-  const row = btn.closest(".directory-row");
-  const input = row.querySelector(".dir-email");
-  const dir = loadDirectory();
-  dir[input.dataset.name] = input.value.trim();
-  saveDirectory(dir);
-};
+  const body=`Hi ${firstName},
 
-window.removeDirEntry = function(name) {
-  const dir = loadDirectory();
-  delete dir[name];
-  saveDirectory(dir);
-  renderDirectory();
-};
+Reviewing your timesheet for ${period}, I found the following discrepancies:
+${bullets}
+Total difference: ${fDiff}h (${fImp} at £${RATE}/hr).
 
-/* ── Email staff ──────────────────────────────────────── */
-window.emailStaff = function(idx) {
-  const r = results[idx];
-  const dir = loadDirectory();
-  const email = dir[r.name] || "";
-  const period = document.getElementById("pay-period").value || "[pay period]";
-
-  const fmtA = r.hrsA !== null ? r.hrsA.toFixed(2) : "N/A";
-  const fmtB = r.hrsB !== null ? r.hrsB.toFixed(2) : "N/A";
-  const fmtDiff = Math.abs(r.diff).toFixed(2);
-  const fmtImpact = "£" + r.impact.toFixed(2);
-
-  const firstName = r.name.split(" ")[0];
-  let noteSection = "";
-  if (r.note) noteSection = `\nNote from our end: ${r.note}\n`;
-
-  const body =
-`Hi ${firstName},
-
-Just flagging a difference between your submitted hours and what's showing on DOM Portal for ${period}.
-
-DOM Portal: ${fmtA} hours
-Your submission: ${fmtB} hours
-Difference: ${fmtDiff} hours (${fmtImpact})
-${noteSection}
-Could you have a look and let me know which is correct? Happy to get it sorted once I hear back.
+Could you check these and let me know what's correct?
 
 Thanks,
 Rishil`;
 
-  const subject = `Payroll hours discrepancy — ${period}`;
-  const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  window.open(mailto, "_blank");
+  const subject=`Payroll hours discrepancy — ${period}`;
+  window.open(`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,"_blank");
 };
 
-/* ── Export to Excel ──────────────────────────────────── */
-document.getElementById("btn-export").addEventListener("click", () => {
-  const header = ["Staff", "DOM Portal hrs", "Submitted hrs", "Difference", "£ Impact", "Status", "Notes"];
-  const data = [header];
-  results.forEach(r => {
-    data.push([
-      r.name,
-      r.hrsA !== null ? r.hrsA : "",
-      r.hrsB !== null ? r.hrsB : "",
-      r.diff,
-      r.impact,
-      r.status,
-      r.note,
-    ]);
+/* ── Export to Excel (two sheets) ─────────────────────── */
+document.getElementById("btn-export").addEventListener("click",()=>{
+  // Sheet 1: Summary
+  const sumData=[["Staff","DOM Portal hrs","Submitted hrs","Difference","£ Impact","Status","Notes"]];
+  results.forEach(r=>sumData.push([r.name,r.hrsA!==null?r.hrsA:"",r.hrsB!==null?r.hrsB:"",r.diff,r.impact,r.status,r.note]));
+  const ws1=XLSX.utils.aoa_to_sheet(sumData);
+  ws1["!cols"]=[{wch:28},{wch:16},{wch:16},{wch:12},{wch:12},{wch:32},{wch:30}];
+
+  // Sheet 2: Daily breakdown
+  const dayData=[["Staff","Date","DOM Portal shifts","DOM hrs","Submitted hrs","Difference","Status","Note"]];
+  results.forEach(r=>{
+    (r.daily||[]).forEach(dd=>{
+      dayData.push([r.name,dd.date.toLocaleDateString("en-GB"),dd.shiftsStr,dd.domTotal,dd.subHrs!==null?dd.subHrs:"",dd.diff,dd.status,dd.note]);
+    });
   });
+  const ws2=XLSX.utils.aoa_to_sheet(dayData);
+  ws2["!cols"]=[{wch:28},{wch:14},{wch:40},{wch:10},{wch:14},{wch:12},{wch:28},{wch:30}];
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws["!cols"] = [
-    { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 32 }, { wch: 30 },
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Discrepancies");
-
-  const today = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(wb, `payroll-discrepancies-${today}.xlsx`);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws1,"Summary");
+  XLSX.utils.book_append_sheet(wb,ws2,"Daily");
+  XLSX.writeFile(wb,`payroll-discrepancies-${new Date().toISOString().slice(0,10)}.xlsx`);
 });
 </script>
 </body>
