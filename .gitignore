@@ -1,0 +1,11 @@
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+*.log
+
+# Python / Streamlit
+venv/
+__pycache__/
+*.pyc
+.streamlit/

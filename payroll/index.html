@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Payroll Discrepancy Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ── Reset & base ─────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0a0a0d;
+  color: #e8e8ea;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+a { color: rgba(232,232,234,0.5); text-decoration: none; }
+a:hover { color: #e8e8ea; }
+
+h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.3rem; }
+h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.8rem; color: rgba(232,232,234,0.7); }
+
+.mono {
+  font-family: "JetBrains Mono", "Roboto Mono", "SF Mono", "Cascadia Code", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.muted { color: rgba(232,232,234,0.4); }
+.small { font-size: 0.8rem; }
+
+/* ── Layout ───────────────────────────────────────────── */
+.back { font-size: 0.8rem; margin-bottom: 1.5rem; display: inline-block; }
+
+.top-bar {
+  display: flex; gap: 1.5rem; align-items: flex-end;
+  flex-wrap: wrap; margin-bottom: 2rem;
+}
+.top-bar label { font-size: 0.8rem; color: rgba(232,232,234,0.5); display: block; margin-bottom: 0.2rem; }
+.top-bar input[type="text"] {
+  background: #16161a; border: 1px solid rgba(232,232,234,0.12); border-radius: 4px;
+  color: #e8e8ea; padding: 0.4rem 0.7rem; font-size: 0.85rem; width: 260px;
+}
+
+.upload-row { display: flex; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap; }
+
+.upload-zone {
+  flex: 1; min-width: 280px;
+  border: 2px dashed rgba(232,232,234,0.12); border-radius: 8px;
+  padding: 1.5rem; text-align: center; cursor: pointer;
+  transition: border-color 0.2s;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: rgba(232,232,234,0.35); }
+.upload-zone.loaded { border-color: rgba(74,222,128,0.4); border-style: solid; }
+.upload-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+.upload-zone .label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; }
+.upload-zone .hint { font-size: 0.75rem; color: rgba(232,232,234,0.3); }
+.upload-zone .filename { font-size: 0.75rem; color: rgba(74,222,128,0.7); margin-top: 0.5rem; }
+
+/* Column mapper */
+.col-mapper { margin-top: 1rem; text-align: left; }
+.col-mapper label { font-size: 0.78rem; color: rgba(232,232,234,0.5); display: block; margin-bottom: 0.15rem; }
+.col-mapper select {
+  background: #16161a; border: 1px solid rgba(232,232,234,0.15); border-radius: 4px;
+  color: #e8e8ea; padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%; margin-bottom: 0.6rem;
+}
+
+/* Preview */
+.preview { margin-top: 1rem; text-align: left; max-height: 180px; overflow-y: auto; }
+.preview table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+.preview th { text-align: left; color: rgba(232,232,234,0.4); padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(232,232,234,0.08); }
+.preview td { padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(232,232,234,0.05); }
+
+/* ── Buttons ──────────────────────────────────────────── */
+.btn {
+  display: inline-block; padding: 0.5rem 1.2rem; font-size: 0.82rem;
+  border: 1px solid rgba(232,232,234,0.15); border-radius: 5px;
+  background: transparent; color: #e8e8ea; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover { background: rgba(232,232,234,0.06); border-color: rgba(232,232,234,0.3); }
+.btn-primary { background: rgba(232,232,234,0.08); border-color: rgba(232,232,234,0.25); }
+.btn-sm { padding: 0.25rem 0.6rem; font-size: 0.72rem; }
+.btn-row { display: flex; gap: 0.8rem; margin-bottom: 2rem; flex-wrap: wrap; }
+
+/* ── Summary banner ───────────────────────────────────── */
+.summary-banner {
+  background: rgba(232,232,234,0.04); border: 1px solid rgba(232,232,234,0.1);
+  border-radius: 6px; padding: 1rem 1.5rem; margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+.summary-banner strong { color: #e8e8ea; }
+
+/* ── Results table ────────────────────────────────────── */
+.results-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
+.results-table th {
+  text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: rgba(232,232,234,0.4); padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(232,232,234,0.1);
+}
+.results-table td {
+  padding: 0.5rem 0.6rem; font-size: 0.82rem;
+  border-bottom: 1px solid rgba(232,232,234,0.06);
+  vertical-align: top;
+}
+.results-table .num { text-align: right; }
+
+/* Row borders for status */
+.results-table tr.status-match { opacity: 0.4; }
+.results-table tr.status-match td:first-child { border-left: 4px solid #555; }
+.results-table tr.status-mismatch td:first-child { border-left: 4px solid #eab308; }
+.results-table tr.status-missing td:first-child { border-left: 4px solid #ef4444; }
+
+.results-table textarea {
+  background: #16161a; border: 1px solid rgba(232,232,234,0.1); border-radius: 3px;
+  color: #e8e8ea; font-size: 0.78rem; padding: 0.3rem 0.5rem;
+  width: 100%; min-width: 120px; height: 2.2rem; resize: vertical;
+  font-family: inherit;
+}
+
+.status-badge {
+  display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem;
+  border-radius: 3px; white-space: nowrap;
+}
+.badge-match { background: rgba(107,114,128,0.2); color: rgba(232,232,234,0.5); }
+.badge-over { background: rgba(234,179,8,0.15); color: #eab308; }
+.badge-under { background: rgba(234,179,8,0.15); color: #eab308; }
+.badge-missing { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* ── Email directory ──────────────────────────────────── */
+.directory { margin-bottom: 2rem; }
+.directory-toggle {
+  font-size: 0.82rem; cursor: pointer; color: rgba(232,232,234,0.5);
+  user-select: none; margin-bottom: 0.5rem;
+}
+.directory-toggle:hover { color: #e8e8ea; }
+.directory-body { display: none; }
+.directory-body.open { display: block; }
+.directory-row {
+  display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.3rem;
+}
+.directory-row .dir-name {
+  font-size: 0.78rem; width: 200px; color: rgba(232,232,234,0.6);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.directory-row input[type="email"] {
+  background: #16161a; border: 1px solid rgba(232,232,234,0.1); border-radius: 3px;
+  color: #e8e8ea; font-size: 0.78rem; padding: 0.2rem 0.5rem; width: 240px;
+}
+.directory-row .btn-sm { flex-shrink: 0; }
+
+/* ── Sections ─────────────────────────────────────────── */
+section { margin-bottom: 2rem; }
+.hidden { display: none; }
+
+@media (max-width: 640px) {
+  body { padding: 1rem; }
+  .upload-row { flex-direction: column; }
+  .top-bar { flex-direction: column; align-items: stretch; }
+  .results-table { font-size: 0.72rem; }
+}
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back">← Dashboard</a>
+<h1>Payroll Discrepancy Tool</h1>
+<p class="muted small" style="margin-bottom:1.5rem;">Compare DOM Portal hours against support worker submitted sheets. All processing happens in your browser.</p>
+
+<!-- Top bar: pay period -->
+<div class="top-bar">
+  <div>
+    <label for="pay-period">Pay period label (used in emails)</label>
+    <input type="text" id="pay-period" placeholder="e.g. April 2026 — Week 4">
+  </div>
+</div>
+
+<!-- Upload zones -->
+<div class="upload-row">
+  <!-- Source A -->
+  <div class="upload-zone" id="zone-a">
+    <input type="file" accept=".xlsx,.xls,.csv" id="file-a">
+    <div class="label">Source A — DOM Portal</div>
+    <div class="hint">Drop .xlsx or click to browse</div>
+    <div class="filename" id="fname-a"></div>
+    <div class="preview" id="preview-a"></div>
+  </div>
+  <!-- Source B -->
+  <div class="upload-zone" id="zone-b">
+    <input type="file" accept=".xlsx,.xls,.csv" id="file-b">
+    <div class="label">Source B — Support Worker</div>
+    <div class="hint">Drop .xlsx or click to browse</div>
+    <div class="filename" id="fname-b"></div>
+    <div class="col-mapper hidden" id="mapper-b">
+      <label for="col-name-b">Staff name column</label>
+      <select id="col-name-b"></select>
+      <label for="col-hours-b">Hours column</label>
+      <select id="col-hours-b"></select>
+      <button class="btn btn-sm" id="apply-map-b">Apply mapping</button>
+    </div>
+    <div class="preview" id="preview-b"></div>
+  </div>
+</div>
+
+<!-- Compare button -->
+<div class="btn-row">
+  <button class="btn btn-primary" id="btn-compare" disabled>Compare</button>
+  <button class="btn hidden" id="btn-export">Download as Excel</button>
+</div>
+
+<!-- Results -->
+<section id="results-section" class="hidden">
+  <div class="summary-banner" id="summary-banner"></div>
+
+  <!-- Email directory -->
+  <div class="directory">
+    <div class="directory-toggle" id="dir-toggle">▶ Staff Email Directory</div>
+    <div class="directory-body" id="dir-body"></div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <table class="results-table" id="results-table">
+      <thead>
+        <tr>
+          <th>Staff</th>
+          <th class="num">Hours (DOM Portal)</th>
+          <th class="num">Hours (Support Worker)</th>
+          <th class="num">Difference (hrs)</th>
+          <th class="num">£ Impact</th>
+          <th>Status</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+/* ================================================================
+   Payroll Discrepancy Tool — all logic
+   ================================================================ */
+
+const RATE = 13.45;
+
+/* ── Utility ──────────────────────────────────────────── */
+function normName(s) {
+  if (s == null) return "";
+  return String(s).trim().replace(/\s+/g, " ");
+}
+
+function round2(n) { return Math.round(n * 100) / 100; }
+
+function toNum(v) {
+  if (v == null) return 0;
+  if (typeof v === "number") return v;
+  const n = parseFloat(String(v).replace(/[^\d.\-]/g, ""));
+  return isNaN(n) ? 0 : n;
+}
+
+/* ── localStorage email directory ─────────────────────── */
+function loadDirectory() {
+  try { return JSON.parse(localStorage.getItem("payroll_emails") || "{}"); } catch { return {}; }
+}
+function saveDirectory(dir) { localStorage.setItem("payroll_emails", JSON.stringify(dir)); }
+
+/* ── State ────────────────────────────────────────────── */
+let sourceA = null;       // Map<name, totalHours>
+let sourceB = null;       // Map<name, totalHours>
+let rawSheetB = null;     // raw rows from Source B for re-mapping
+let headersB = [];        // column headers from Source B
+let results = [];         // comparison rows
+
+/* ── File parsing ─────────────────────────────────────── */
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(new Uint8Array(e.target.result));
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function parseSourceA(file) {
+  const data = await readFile(file);
+  const wb = XLSX.read(data, { type: "array" });
+
+  // Try "Shift_Timesheets" sheet, else fall back to first sheet
+  const sheetName = wb.SheetNames.includes("Shift_Timesheets") ? "Shift_Timesheets" : wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+
+  if (rows.length < 2) throw new Error("Source A has no data rows.");
+
+  // Find Staff (C=2) and Hours (H=7) columns by index (0-based)
+  const map = new Map();
+  for (let i = 1; i < rows.length; i++) {
+    const name = normName(rows[i][2]);
+    const hours = toNum(rows[i][7]);
+    if (!name) continue;
+    map.set(name, (map.get(name) || 0) + hours);
+  }
+  return map;
+}
+
+async function readSourceBRaw(file) {
+  const data = await readFile(file);
+  const wb = XLSX.read(data, { type: "array" });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+}
+
+function parseSourceBWithMapping(rows, nameCol, hoursCol) {
+  const map = new Map();
+  for (let i = 1; i < rows.length; i++) {
+    const name = normName(rows[i][nameCol]);
+    const hours = toNum(rows[i][hoursCol]);
+    if (!name) continue;
+    map.set(name, (map.get(name) || 0) + hours);
+  }
+  return map;
+}
+
+/* ── Preview table ────────────────────────────────────── */
+function renderPreview(containerId, dataMap) {
+  const el = document.getElementById(containerId);
+  if (!dataMap || dataMap.size === 0) { el.innerHTML = "<p class='muted small'>No data.</p>"; return; }
+
+  const sorted = [...dataMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  let html = "<table><tr><th>Staff</th><th style='text-align:right'>Hours</th></tr>";
+  for (const [name, hrs] of sorted) {
+    html += `<tr><td class="mono">${esc(name)}</td><td class="mono" style="text-align:right">${round2(hrs)}</td></tr>`;
+  }
+  html += "</table>";
+  el.innerHTML = html;
+}
+
+function esc(s) {
+  const d = document.createElement("div"); d.textContent = s; return d.innerHTML;
+}
+
+/* ── Upload handlers ──────────────────────────────────── */
+const fileA = document.getElementById("file-a");
+const fileB = document.getElementById("file-b");
+const fnameA = document.getElementById("fname-a");
+const fnameB = document.getElementById("fname-b");
+const zoneA = document.getElementById("zone-a");
+const zoneB = document.getElementById("zone-b");
+const mapperB = document.getElementById("mapper-b");
+const colNameB = document.getElementById("col-name-b");
+const colHoursB = document.getElementById("col-hours-b");
+const btnCompare = document.getElementById("btn-compare");
+
+// Drag-over visual
+[zoneA, zoneB].forEach(z => {
+  z.addEventListener("dragover", () => z.classList.add("dragover"));
+  z.addEventListener("dragleave", () => z.classList.remove("dragover"));
+  z.addEventListener("drop", () => z.classList.remove("dragover"));
+});
+
+fileA.addEventListener("change", async () => {
+  const f = fileA.files[0]; if (!f) return;
+  fnameA.textContent = f.name;
+  try {
+    sourceA = await parseSourceA(f);
+    zoneA.classList.add("loaded");
+    renderPreview("preview-a", sourceA);
+    checkReady();
+  } catch (e) { fnameA.textContent = "Error: " + e.message; }
+});
+
+fileB.addEventListener("change", async () => {
+  const f = fileB.files[0]; if (!f) return;
+  fnameB.textContent = f.name;
+  try {
+    const rows = await readSourceBRaw(f);
+    rawSheetB = rows;
+    headersB = rows[0] || [];
+
+    // Populate column dropdowns
+    colNameB.innerHTML = "";
+    colHoursB.innerHTML = "";
+    headersB.forEach((h, i) => {
+      const label = h ? String(h) : `Column ${i + 1}`;
+      colNameB.innerHTML += `<option value="${i}">${esc(label)}</option>`;
+      colHoursB.innerHTML += `<option value="${i}">${esc(label)}</option>`;
+    });
+
+    // Auto-guess: first col that smells like "name" and "hours"
+    headersB.forEach((h, i) => {
+      const lc = String(h).toLowerCase();
+      if (lc.includes("name") || lc.includes("staff") || lc.includes("worker") || lc.includes("employee")) colNameB.value = i;
+      if (lc.includes("hour") || lc.includes("hrs") || lc.includes("total")) colHoursB.value = i;
+    });
+
+    mapperB.classList.remove("hidden");
+    zoneB.classList.add("loaded");
+    sourceB = null;
+    renderPreview("preview-b", null);
+  } catch (e) { fnameB.textContent = "Error: " + e.message; }
+});
+
+document.getElementById("apply-map-b").addEventListener("click", () => {
+  if (!rawSheetB) return;
+  const ni = parseInt(colNameB.value);
+  const hi = parseInt(colHoursB.value);
+  sourceB = parseSourceBWithMapping(rawSheetB, ni, hi);
+  renderPreview("preview-b", sourceB);
+  checkReady();
+});
+
+function checkReady() {
+  btnCompare.disabled = !(sourceA && sourceB);
+}
+
+/* ── Compare ──────────────────────────────────────────── */
+btnCompare.addEventListener("click", compare);
+
+function compare() {
+  if (!sourceA || !sourceB) return;
+
+  const allNames = new Set([...sourceA.keys(), ...sourceB.keys()]);
+  results = [];
+
+  for (const name of allNames) {
+    const hrsA = sourceA.has(name) ? round2(sourceA.get(name)) : null;
+    const hrsB = sourceB.has(name) ? round2(sourceB.get(name)) : null;
+
+    let diff = 0, impact = 0, status = "", statusClass = "", badgeClass = "";
+
+    if (hrsA === null) {
+      diff = hrsB;
+      impact = round2(hrsB * RATE);
+      status = "Missing in DOM Portal";
+      statusClass = "status-missing";
+      badgeClass = "badge-missing";
+    } else if (hrsB === null) {
+      diff = -hrsA;
+      impact = round2(hrsA * RATE);
+      status = "Missing in Support Worker sheet";
+      statusClass = "status-missing";
+      badgeClass = "badge-missing";
+    } else {
+      diff = round2(hrsB - hrsA);
+      impact = round2(Math.abs(diff) * RATE);
+      if (diff === 0) {
+        status = "Match";
+        statusClass = "status-match";
+        badgeClass = "badge-match";
+      } else if (diff > 0) {
+        status = "Mismatch — staff over-claiming";
+        statusClass = "status-mismatch";
+        badgeClass = "badge-over";
+      } else {
+        status = "Mismatch — staff under-claimed";
+        statusClass = "status-mismatch";
+        badgeClass = "badge-under";
+      }
+    }
+
+    results.push({ name, hrsA, hrsB, diff, impact, status, statusClass, badgeClass, note: "" });
+  }
+
+  // Sort: discrepancies first, then matches, alpha within each group
+  results.sort((a, b) => {
+    const aDisc = a.status !== "Match" ? 0 : 1;
+    const bDisc = b.status !== "Match" ? 0 : 1;
+    if (aDisc !== bDisc) return aDisc - bDisc;
+    return a.name.localeCompare(b.name);
+  });
+
+  renderResults();
+  populateDirectory();
+  document.getElementById("results-section").classList.remove("hidden");
+  document.getElementById("btn-export").classList.remove("hidden");
+}
+
+/* ── Render results ───────────────────────────────────── */
+function renderResults() {
+  const tbody = document.getElementById("results-body");
+
+  const discCount = results.filter(r => r.status !== "Match").length;
+  const totalImpact = round2(results.filter(r => r.status !== "Match").reduce((s, r) => s + r.impact, 0));
+
+  document.getElementById("summary-banner").innerHTML =
+    `<strong>${discCount} discrepanc${discCount === 1 ? "y" : "ies"}</strong> found` +
+    (discCount > 0 ? `, total £ impact: <strong class="mono">£${totalImpact.toFixed(2)}</strong>` : "") +
+    ` &nbsp;·&nbsp; ${results.length} staff compared`;
+
+  let html = "";
+  results.forEach((r, i) => {
+    const fmtA = r.hrsA !== null ? r.hrsA.toFixed(2) : "—";
+    const fmtB = r.hrsB !== null ? r.hrsB.toFixed(2) : "—";
+    const fmtDiff = (r.diff >= 0 ? "+" : "") + r.diff.toFixed(2);
+    const fmtImpact = "£" + r.impact.toFixed(2);
+    const isDisc = r.status !== "Match";
+
+    html += `<tr class="${r.statusClass}">
+      <td class="mono">${esc(r.name)}</td>
+      <td class="mono num">${fmtA}</td>
+      <td class="mono num">${fmtB}</td>
+      <td class="mono num">${fmtDiff}</td>
+      <td class="mono num">${fmtImpact}</td>
+      <td><span class="status-badge ${r.badgeClass}">${r.status}</span></td>
+      <td><textarea data-idx="${i}" class="note-input" placeholder="Add note...">${esc(r.note)}</textarea></td>
+      <td>${isDisc ? `<button class="btn btn-sm" onclick="emailStaff(${i})">Email</button>` : ""}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+
+  // Bind note inputs
+  tbody.querySelectorAll(".note-input").forEach(ta => {
+    ta.addEventListener("input", () => {
+      results[parseInt(ta.dataset.idx)].note = ta.value;
+    });
+  });
+}
+
+/* ── Email directory ──────────────────────────────────── */
+function populateDirectory() {
+  const dir = loadDirectory();
+  const allNames = results.map(r => r.name);
+
+  // Add any new names
+  allNames.forEach(n => { if (!(n in dir)) dir[n] = ""; });
+  saveDirectory(dir);
+
+  renderDirectory();
+}
+
+function renderDirectory() {
+  const dir = loadDirectory();
+  const body = document.getElementById("dir-body");
+  const names = Object.keys(dir).sort();
+
+  let html = "";
+  names.forEach(name => {
+    html += `<div class="directory-row">
+      <span class="dir-name mono">${esc(name)}</span>
+      <input type="email" value="${esc(dir[name])}" data-name="${esc(name)}" class="dir-email" placeholder="email@example.com">
+      <button class="btn btn-sm" onclick="saveDirEntry(this)">Save</button>
+      <button class="btn btn-sm" onclick="removeDirEntry('${esc(name)}')">✕</button>
+    </div>`;
+  });
+  body.innerHTML = html;
+}
+
+document.getElementById("dir-toggle").addEventListener("click", () => {
+  const body = document.getElementById("dir-body");
+  const toggle = document.getElementById("dir-toggle");
+  body.classList.toggle("open");
+  toggle.textContent = body.classList.contains("open") ? "▼ Staff Email Directory" : "▶ Staff Email Directory";
+});
+
+window.saveDirEntry = function(btn) {
+  const row = btn.closest(".directory-row");
+  const input = row.querySelector(".dir-email");
+  const name = input.dataset.name;
+  const dir = loadDirectory();
+  dir[name] = input.value.trim();
+  saveDirectory(dir);
+};
+
+window.removeDirEntry = function(name) {
+  const dir = loadDirectory();
+  delete dir[name];
+  saveDirectory(dir);
+  renderDirectory();
+};
+
+/* ── Email staff ──────────────────────────────────────── */
+window.emailStaff = function(idx) {
+  const r = results[idx];
+  const dir = loadDirectory();
+  const email = dir[r.name] || "";
+  const period = document.getElementById("pay-period").value || "[pay period]";
+
+  const fmtA = r.hrsA !== null ? r.hrsA.toFixed(2) : "N/A";
+  const fmtB = r.hrsB !== null ? r.hrsB.toFixed(2) : "N/A";
+  const fmtDiff = Math.abs(r.diff).toFixed(2);
+  const fmtImpact = "£" + r.impact.toFixed(2);
+
+  const firstName = r.name.split(" ")[0];
+  let noteSection = "";
+  if (r.note) noteSection = `\nNote from our end: ${r.note}\n`;
+
+  const body =
+`Hi ${firstName},
+
+Just flagging a difference between your submitted hours and what's showing on DOM Portal for ${period}.
+
+DOM Portal: ${fmtA} hours
+Your submission: ${fmtB} hours
+Difference: ${fmtDiff} hours (${fmtImpact})
+${noteSection}
+Could you have a look and let me know which is correct? Happy to get it sorted once I hear back.
+
+Thanks,
+Rishil`;
+
+  const subject = `Payroll hours discrepancy — ${period}`;
+  const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(mailto, "_blank");
+};
+
+/* ── Export to Excel ──────────────────────────────────── */
+document.getElementById("btn-export").addEventListener("click", () => {
+  const rows = [["Staff", "Hours (DOM Portal)", "Hours (Support Worker)", "Difference (hrs)", "£ Impact", "Status", "Notes"]];
+  results.forEach(r => {
+    rows.push([
+      r.name,
+      r.hrsA !== null ? r.hrsA : "",
+      r.hrsB !== null ? r.hrsB : "",
+      r.diff,
+      r.impact,
+      r.status,
+      r.note,
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Set column widths
+  ws["!cols"] = [
+    { wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 12 }, { wch: 34 }, { wch: 30 },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Discrepancies");
+
+  const today = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `payroll-discrepancies-${today}.xlsx`);
+});
+</script>
+</body>
+</html>
