@@ -64,19 +64,54 @@ h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.8rem; color: rgba(232,2
 .upload-zone .hint { font-size: 0.75rem; color: rgba(232,232,234,0.3); }
 .upload-zone .filename { font-size: 0.75rem; color: rgba(74,222,128,0.7); margin-top: 0.5rem; }
 
-/* Column mapper */
-.col-mapper { margin-top: 1rem; text-align: left; }
-.col-mapper label { font-size: 0.78rem; color: rgba(232,232,234,0.5); display: block; margin-bottom: 0.15rem; }
-.col-mapper select {
-  background: #16161a; border: 1px solid rgba(232,232,234,0.15); border-radius: 4px;
-  color: #e8e8ea; padding: 0.3rem 0.5rem; font-size: 0.8rem; width: 100%; margin-bottom: 0.6rem;
-}
-
 /* Preview */
 .preview { margin-top: 1rem; text-align: left; max-height: 180px; overflow-y: auto; }
 .preview table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
 .preview th { text-align: left; color: rgba(232,232,234,0.4); padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(232,232,234,0.08); }
 .preview td { padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(232,232,234,0.05); }
+
+/* ── Worker file cards ────────────────────────────────── */
+.worker-cards { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; text-align: left; }
+.worker-card {
+  background: rgba(232,232,234,0.03); border: 1px solid rgba(232,232,234,0.08);
+  border-radius: 6px; padding: 0.8rem 1rem; position: relative;
+}
+.worker-card.has-error { border-color: rgba(239,68,68,0.4); }
+.worker-card .wc-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.3rem; }
+.worker-card .wc-name { font-weight: 600; font-size: 0.88rem; }
+.worker-card .wc-file { font-size: 0.7rem; color: rgba(232,232,234,0.35); }
+.worker-card .wc-stats { font-size: 0.78rem; color: rgba(232,232,234,0.6); }
+.worker-card .wc-stats span { margin-right: 1rem; }
+.worker-card .wc-error { font-size: 0.78rem; color: #ef4444; margin-top: 0.3rem; }
+.worker-card .wc-actions { margin-top: 0.4rem; }
+.worker-card .btn-sm { margin-right: 0.3rem; }
+
+/* ── Date range bar ───────────────────────────────────── */
+.date-range-bar {
+  background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2);
+  border-radius: 6px; padding: 0.8rem 1.2rem; margin-bottom: 1.5rem;
+  font-size: 0.88rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+}
+.date-range-bar strong { color: #e8e8ea; }
+.date-range-bar .warning { color: #eab308; font-size: 0.78rem; }
+
+/* ── Override modal ───────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 100; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #16161a; border: 1px solid rgba(232,232,234,0.15);
+  border-radius: 8px; padding: 1.5rem; width: 380px; max-width: 90vw;
+}
+.modal h3 { font-size: 1rem; margin-bottom: 1rem; }
+.modal label { font-size: 0.78rem; color: rgba(232,232,234,0.5); display: block; margin-bottom: 0.15rem; }
+.modal input[type="text"], .modal input[type="number"] {
+  background: #0a0a0d; border: 1px solid rgba(232,232,234,0.12); border-radius: 4px;
+  color: #e8e8ea; padding: 0.4rem 0.6rem; font-size: 0.85rem; width: 100%; margin-bottom: 0.8rem;
+}
+.modal .modal-btns { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; }
 
 /* ── Buttons ──────────────────────────────────────────── */
 .btn {
@@ -88,7 +123,10 @@ h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.8rem; color: rgba(232,2
 .btn:hover { background: rgba(232,232,234,0.06); border-color: rgba(232,232,234,0.3); }
 .btn-primary { background: rgba(232,232,234,0.08); border-color: rgba(232,232,234,0.25); }
 .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.72rem; }
-.btn-row { display: flex; gap: 0.8rem; margin-bottom: 2rem; flex-wrap: wrap; }
+.btn-danger { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+.btn-danger:hover { background: rgba(239,68,68,0.1); }
+.btn-row { display: flex; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+.btn-row .error-msg { font-size: 0.78rem; color: #ef4444; }
 
 /* ── Summary banner ───────────────────────────────────── */
 .summary-banner {
@@ -112,7 +150,6 @@ h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.8rem; color: rgba(232,2
 }
 .results-table .num { text-align: right; }
 
-/* Row borders for status */
 .results-table tr.status-match { opacity: 0.4; }
 .results-table tr.status-match td:first-child { border-left: 4px solid #555; }
 .results-table tr.status-mismatch td:first-child { border-left: 4px solid #eab308; }
@@ -172,7 +209,7 @@ section { margin-bottom: 2rem; }
 
 <a href="../index.html" class="back">← Dashboard</a>
 <h1>Payroll Discrepancy Tool</h1>
-<p class="muted small" style="margin-bottom:1.5rem;">Compare DOM Portal hours against support worker submitted sheets. All processing happens in your browser.</p>
+<p class="muted small" style="margin-bottom:1.5rem;">Compare DOM Portal hours against support worker submitted timesheets. All processing happens in your browser.</p>
 
 <!-- Top bar: pay period -->
 <div class="top-bar">
@@ -184,42 +221,41 @@ section { margin-bottom: 2rem; }
 
 <!-- Upload zones -->
 <div class="upload-row">
-  <!-- Source A -->
+  <!-- Source A — DOM Portal -->
   <div class="upload-zone" id="zone-a">
     <input type="file" accept=".xlsx,.xls,.csv" id="file-a">
     <div class="label">Source A — DOM Portal</div>
-    <div class="hint">Drop .xlsx or click to browse</div>
+    <div class="hint">Shift_Timesheets export (.xlsx)</div>
     <div class="filename" id="fname-a"></div>
     <div class="preview" id="preview-a"></div>
   </div>
-  <!-- Source B -->
+  <!-- Source B — Support Worker timesheets -->
   <div class="upload-zone" id="zone-b">
-    <input type="file" accept=".xlsx,.xls,.csv" id="file-b">
-    <div class="label">Source B — Support Worker</div>
-    <div class="hint">Drop .xlsx or click to browse</div>
+    <input type="file" accept=".xlsx,.xls,.csv" id="file-b" multiple>
+    <div class="label">Source B — Support Worker Timesheets</div>
+    <div class="hint">Drop one file per worker (multi-select)</div>
     <div class="filename" id="fname-b"></div>
-    <div class="col-mapper hidden" id="mapper-b">
-      <label for="col-name-b">Staff name column</label>
-      <select id="col-name-b"></select>
-      <label for="col-hours-b">Hours column</label>
-      <select id="col-hours-b"></select>
-      <button class="btn btn-sm" id="apply-map-b">Apply mapping</button>
-    </div>
-    <div class="preview" id="preview-b"></div>
+    <div class="worker-cards" id="worker-cards"></div>
   </div>
+</div>
+
+<!-- Date range -->
+<div class="date-range-bar hidden" id="date-range-bar">
+  <strong>Comparing:</strong> <span id="date-range-label"></span>
+  <span class="warning hidden" id="month-warning"></span>
 </div>
 
 <!-- Compare button -->
 <div class="btn-row">
-  <button class="btn btn-primary" id="btn-compare" disabled>Compare</button>
+  <button class="btn btn-primary" id="btn-compare">Compare</button>
   <button class="btn hidden" id="btn-export">Download as Excel</button>
+  <span class="error-msg hidden" id="compare-error"></span>
 </div>
 
 <!-- Results -->
 <section id="results-section" class="hidden">
   <div class="summary-banner" id="summary-banner"></div>
 
-  <!-- Email directory -->
   <div class="directory">
     <div class="directory-toggle" id="dir-toggle">▶ Staff Email Directory</div>
     <div class="directory-body" id="dir-body"></div>
@@ -230,9 +266,9 @@ section { margin-bottom: 2rem; }
       <thead>
         <tr>
           <th>Staff</th>
-          <th class="num">Hours (DOM Portal)</th>
-          <th class="num">Hours (Support Worker)</th>
-          <th class="num">Difference (hrs)</th>
+          <th class="num">DOM Portal hrs</th>
+          <th class="num">Submitted hrs</th>
+          <th class="num">Difference</th>
           <th class="num">£ Impact</th>
           <th>Status</th>
           <th>Notes</th>
@@ -244,26 +280,79 @@ section { margin-bottom: 2rem; }
   </div>
 </section>
 
+<!-- Override modal -->
+<div class="modal-overlay" id="override-modal">
+  <div class="modal">
+    <h3>Override parsed values</h3>
+    <label for="ovr-name">Staff name</label>
+    <input type="text" id="ovr-name">
+    <label for="ovr-month">Month (e.g. April, May)</label>
+    <input type="text" id="ovr-month">
+    <label for="ovr-hours">Total hours</label>
+    <input type="number" id="ovr-hours" step="0.01">
+    <div class="modal-btns">
+      <button class="btn btn-sm" id="ovr-cancel">Cancel</button>
+      <button class="btn btn-sm btn-primary" id="ovr-save">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ================================================================
-   Payroll Discrepancy Tool — all logic
+   Payroll Discrepancy Tool
    ================================================================ */
 
 const RATE = 13.45;
+const DISC_THRESHOLD = 0.25;
 
 /* ── Utility ──────────────────────────────────────────── */
 function normName(s) {
   if (s == null) return "";
   return String(s).trim().replace(/\s+/g, " ");
 }
-
+function normKey(s) { return normName(s).toLowerCase(); }
 function round2(n) { return Math.round(n * 100) / 100; }
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
 
 function toNum(v) {
   if (v == null) return 0;
   if (typeof v === "number") return v;
   const n = parseFloat(String(v).replace(/[^\d.\-]/g, ""));
   return isNaN(n) ? 0 : n;
+}
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => resolve(new Uint8Array(e.target.result));
+    r.onerror = reject;
+    r.readAsArrayBuffer(file);
+  });
+}
+
+/* Month name → number (1-indexed) */
+const MONTH_NAMES = ["january","february","march","april","may","june",
+  "july","august","september","october","november","december"];
+function parseMonth(s) {
+  if (!s) return null;
+  const lc = String(s).trim().toLowerCase();
+  // Try month name
+  for (let i = 0; i < MONTH_NAMES.length; i++) {
+    if (lc.startsWith(MONTH_NAMES[i].slice(0, 3))) return i + 1;
+  }
+  // Try bare number
+  const n = parseInt(lc);
+  if (n >= 1 && n <= 12) return n;
+  return null;
+}
+
+function monthName(n) {
+  return ["January","February","March","April","May","June",
+    "July","August","September","October","November","December"][n - 1] || "?";
+}
+
+function daysInMonth(month, year) {
+  return new Date(year, month, 0).getDate();
 }
 
 /* ── localStorage email directory ─────────────────────── */
@@ -273,212 +362,476 @@ function loadDirectory() {
 function saveDirectory(dir) { localStorage.setItem("payroll_emails", JSON.stringify(dir)); }
 
 /* ── State ────────────────────────────────────────────── */
-let sourceA = null;       // Map<name, totalHours>
-let sourceB = null;       // Map<name, totalHours>
-let rawSheetB = null;     // raw rows from Source B for re-mapping
-let headersB = [];        // column headers from Source B
-let results = [];         // comparison rows
+let domPortalRows = null;   // raw rows from Source A
+let domPortalByStaff = null; // Map<normKey, {display, rows:[{date,hours}]}>
+let workerFiles = [];        // [{id, fileName, staffName, month, totalHours, daysWorked, error, overridden}]
+let results = [];
+let detectedMonth = null;    // {month, year} from support worker files
+let activeRange = null;      // {start: Date, end: Date, label: string}
 
-/* ── File parsing ─────────────────────────────────────── */
-function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(new Uint8Array(e.target.result));
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
-  });
-}
-
+/* ================================================================
+   SOURCE A — DOM Portal
+   Format: Sheet "Shift_Timesheets" (or first sheet)
+   Row 1: header — A:Date B:Day C:Staff D:Shift ... H:Hours
+   Row 2+: data
+   ================================================================ */
 async function parseSourceA(file) {
   const data = await readFile(file);
-  const wb = XLSX.read(data, { type: "array" });
+  const wb = XLSX.read(data, { type: "array", cellDates: true });
 
-  // Try "Shift_Timesheets" sheet, else fall back to first sheet
-  const sheetName = wb.SheetNames.includes("Shift_Timesheets") ? "Shift_Timesheets" : wb.SheetNames[0];
+  let sheetName = wb.SheetNames[0];
+  const match = wb.SheetNames.find(s => s.trim().toLowerCase().includes("shift"));
+  if (match) sheetName = match;
+
   const ws = wb.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: true });
   if (rows.length < 2) throw new Error("Source A has no data rows.");
 
-  // Find Staff (C=2) and Hours (H=7) columns by index (0-based)
-  const map = new Map();
+  domPortalRows = rows;
+
+  // Build per-staff index with dates
+  const map = new Map(); // normKey → {display, entries:[{date, hours}]}
+
   for (let i = 1; i < rows.length; i++) {
-    const name = normName(rows[i][2]);
-    const hours = toNum(rows[i][7]);
-    if (!name) continue;
-    map.set(name, (map.get(name) || 0) + hours);
+    const rawName = normName(rows[i][2]); // Column C = Staff
+    if (!rawName) continue;
+    const key = normKey(rawName);
+    const hours = toNum(rows[i][7]);      // Column H = Hours
+
+    // Parse date from column A
+    let date = null;
+    const rawDate = rows[i][0];
+    if (rawDate instanceof Date) {
+      date = rawDate;
+    } else if (rawDate) {
+      const d = new Date(rawDate);
+      if (!isNaN(d.getTime())) date = d;
+    }
+
+    if (!map.has(key)) map.set(key, { display: rawName, entries: [] });
+    map.get(key).entries.push({ date, hours });
   }
+
+  domPortalByStaff = map;
   return map;
 }
 
-async function readSourceBRaw(file) {
-  const data = await readFile(file);
-  const wb = XLSX.read(data, { type: "array" });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-}
+/* Sum DOM Portal hours for a staff member within a date range */
+function sumDomPortalHours(key, startDate, endDate) {
+  if (!domPortalByStaff || !domPortalByStaff.has(key)) return null;
+  const entries = domPortalByStaff.get(key).entries;
+  let total = 0;
 
-function parseSourceBWithMapping(rows, nameCol, hoursCol) {
-  const map = new Map();
-  for (let i = 1; i < rows.length; i++) {
-    const name = normName(rows[i][nameCol]);
-    const hours = toNum(rows[i][hoursCol]);
-    if (!name) continue;
-    map.set(name, (map.get(name) || 0) + hours);
+  for (const e of entries) {
+    if (startDate && endDate && e.date) {
+      if (e.date < startDate || e.date > endDate) continue;
+    }
+    total += e.hours;
   }
-  return map;
+  return round2(total);
 }
 
-/* ── Preview table ────────────────────────────────────── */
-function renderPreview(containerId, dataMap) {
-  const el = document.getElementById(containerId);
-  if (!dataMap || dataMap.size === 0) { el.innerHTML = "<p class='muted small'>No data.</p>"; return; }
+/* Get all DOM Portal staff keys */
+function getDomPortalStaffKeys() {
+  if (!domPortalByStaff) return [];
+  return [...domPortalByStaff.keys()];
+}
 
-  const sorted = [...dataMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  let html = "<table><tr><th>Staff</th><th style='text-align:right'>Hours</th></tr>";
-  for (const [name, hrs] of sorted) {
-    html += `<tr><td class="mono">${esc(name)}</td><td class="mono" style="text-align:right">${round2(hrs)}</td></tr>`;
+function getDomPortalDisplay(key) {
+  if (!domPortalByStaff || !domPortalByStaff.has(key)) return key;
+  return domPortalByStaff.get(key).display;
+}
+
+/* Render Source A preview: staff list with total hours (unfiltered) */
+function renderSourceAPreview() {
+  const el = document.getElementById("preview-a");
+  if (!domPortalByStaff || domPortalByStaff.size === 0) {
+    el.innerHTML = "<p class='muted small'>No staff data found.</p>";
+    return;
+  }
+  const sorted = [...domPortalByStaff.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  let html = "<table><tr><th>Staff</th><th style='text-align:right'>Total Hours</th><th style='text-align:right'>Rows</th></tr>";
+  for (const [key, val] of sorted) {
+    const total = round2(val.entries.reduce((s, e) => s + e.hours, 0));
+    html += `<tr><td class="mono">${esc(val.display)}</td><td class="mono" style="text-align:right">${total}</td><td class="mono" style="text-align:right">${val.entries.length}</td></tr>`;
   }
   html += "</table>";
   el.innerHTML = html;
 }
 
-function esc(s) {
-  const d = document.createElement("div"); d.textContent = s; return d.innerHTML;
+/* ================================================================
+   SOURCE B — Support Worker Timesheets
+   One file per worker. Fixed structure:
+   - Sheet: "Timesheet " (may have trailing space)
+   - B2: staff name
+   - B5: month
+   - Row 6: header (Date | Day | Start Time | Finish Time | No of Hrs | ...)
+   - Row 8+: data (col A = ordinal, col E = hours)
+   - Row with "Total" in col A = total row (skip)
+   ================================================================ */
+function findTimesheetSheet(wb) {
+  // Try exact, then fuzzy match
+  for (const name of wb.SheetNames) {
+    if (name.trim().toLowerCase() === "timesheet") return name;
+  }
+  for (const name of wb.SheetNames) {
+    if (name.trim().toLowerCase().includes("timesheet")) return name;
+  }
+  return null;
+}
+
+async function parseWorkerFile(file) {
+  const result = { id: crypto.randomUUID(), fileName: file.name, staffName: "", month: "", monthNum: null, totalHours: 0, daysWorked: 0, error: null, overridden: false };
+
+  try {
+    const data = await readFile(file);
+    const wb = XLSX.read(data, { type: "array", raw: false });
+
+    const sheetName = findTimesheetSheet(wb);
+    if (!sheetName) {
+      result.error = "Couldn't find a 'Timesheet' sheet in this file.";
+      return result;
+    }
+
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", raw: false });
+
+    // Extract staff name from B2 (row index 1, col index 1)
+    const rawName = rows[1] ? normName(rows[1][1]) : "";
+    if (!rawName) {
+      result.error = "Couldn't detect staff name — please use Override to set it.";
+    }
+    result.staffName = rawName;
+
+    // Extract month from B5 (row index 4, col index 1)
+    // But also check B4 in case layout varies
+    let monthStr = "";
+    if (rows[4] && normName(rows[4][1])) monthStr = normName(rows[4][1]);
+    else if (rows[3] && normName(rows[3][1])) monthStr = normName(rows[3][1]);
+    result.month = monthStr;
+    result.monthNum = parseMonth(monthStr);
+    if (!result.monthNum && !result.error) {
+      result.error = "Couldn't detect month — please use Override.";
+    }
+
+    // Find header row (row with "Date" in col A and "No of Hrs" or "Hrs" in col E area)
+    let headerIdx = 5; // default row 6 (0-indexed = 5)
+    for (let i = 3; i < Math.min(rows.length, 10); i++) {
+      const cellA = String(rows[i] && rows[i][0] || "").toLowerCase().trim();
+      if (cellA === "date") { headerIdx = i; break; }
+    }
+
+    // Parse data rows after header (skip header+1 if it's a continuation row like row 7)
+    let dataStart = headerIdx + 1;
+    // Check if row after header is also a header continuation (merged cells with sub-labels)
+    if (rows[dataStart]) {
+      const firstCell = String(rows[dataStart][0] || "").trim().toLowerCase();
+      // If it doesn't look like an ordinal (1st, 2nd...) or number, skip it
+      if (firstCell && !firstCell.match(/^\d/) && firstCell !== "") {
+        dataStart++;
+      }
+    }
+
+    let totalHours = 0;
+    let daysWorked = 0;
+
+    for (let i = dataStart; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row) continue;
+
+      const colA = String(row[0] || "").trim().toLowerCase();
+
+      // Stop at "Total" row or "Signed" row
+      if (colA.startsWith("total") || colA.startsWith("signed")) break;
+
+      // Skip if col A is empty or doesn't start with a digit (ordinals: "1st", "2nd", etc.)
+      if (!colA.match(/^\d/)) continue;
+
+      // Col E (index 4) = No of Hrs
+      const hrsVal = row[4];
+      if (hrsVal === "" || hrsVal == null) continue;
+
+      const hrs = toNum(hrsVal);
+      if (hrs > 0) {
+        totalHours += hrs;
+        daysWorked++;
+      }
+    }
+
+    result.totalHours = round2(totalHours);
+    result.daysWorked = daysWorked;
+
+    if (totalHours === 0 && !result.error) {
+      result.error = "No hours data found.";
+    }
+
+  } catch (e) {
+    result.error = "Failed to parse file: " + e.message;
+  }
+
+  return result;
+}
+
+/* ── Worker cards rendering ───────────────────────────── */
+function renderWorkerCards() {
+  const container = document.getElementById("worker-cards");
+  if (workerFiles.length === 0) { container.innerHTML = ""; return; }
+
+  let html = "";
+  workerFiles.forEach((w, i) => {
+    const hasErr = !!w.error;
+    html += `<div class="worker-card ${hasErr ? 'has-error' : ''}">
+      <div class="wc-header">
+        <span class="wc-name mono">${esc(w.staffName || '(unknown)')}</span>
+        <span class="wc-file">${esc(w.fileName)}</span>
+      </div>
+      <div class="wc-stats">
+        <span>Month: <strong>${esc(w.month || '?')}</strong></span>
+        <span>Hours: <strong class="mono">${w.totalHours}</strong></span>
+        <span>Days worked: <strong class="mono">${w.daysWorked}</strong></span>
+      </div>
+      ${hasErr ? `<div class="wc-error">${esc(w.error)}</div>` : ""}
+      <div class="wc-actions">
+        <button class="btn btn-sm" onclick="openOverride(${i})">✏️ Override</button>
+        <button class="btn btn-sm btn-danger" onclick="removeWorker(${i})">✕ Remove</button>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+
+  updateDetectedMonth();
+}
+
+window.removeWorker = function(idx) {
+  workerFiles.splice(idx, 1);
+  renderWorkerCards();
+  checkReady();
+};
+
+/* ── Override modal ───────────────────────────────────── */
+let overrideIdx = -1;
+
+window.openOverride = function(idx) {
+  overrideIdx = idx;
+  const w = workerFiles[idx];
+  document.getElementById("ovr-name").value = w.staffName;
+  document.getElementById("ovr-month").value = w.month;
+  document.getElementById("ovr-hours").value = w.totalHours;
+  document.getElementById("override-modal").classList.add("open");
+};
+
+document.getElementById("ovr-cancel").addEventListener("click", () => {
+  document.getElementById("override-modal").classList.remove("open");
+});
+
+document.getElementById("ovr-save").addEventListener("click", () => {
+  if (overrideIdx < 0 || overrideIdx >= workerFiles.length) return;
+  const w = workerFiles[overrideIdx];
+  w.staffName = normName(document.getElementById("ovr-name").value);
+  w.month = document.getElementById("ovr-month").value.trim();
+  w.monthNum = parseMonth(w.month);
+  w.totalHours = round2(parseFloat(document.getElementById("ovr-hours").value) || 0);
+  w.overridden = true;
+  w.error = null; // clear error after manual override
+  document.getElementById("override-modal").classList.remove("open");
+  renderWorkerCards();
+  checkReady();
+});
+
+/* ── Month detection from worker files ────────────────── */
+function updateDetectedMonth() {
+  const months = new Set();
+  workerFiles.forEach(w => { if (w.monthNum) months.add(w.monthNum); });
+
+  const bar = document.getElementById("date-range-bar");
+  const label = document.getElementById("date-range-label");
+  const warning = document.getElementById("month-warning");
+
+  if (months.size === 0) {
+    bar.classList.add("hidden");
+    detectedMonth = null;
+    activeRange = null;
+    return;
+  }
+
+  // Guess year — use current year, or next year if month is in the future context
+  const now = new Date();
+  const year = now.getFullYear();
+
+  if (months.size === 1) {
+    const m = [...months][0];
+    detectedMonth = { month: m, year };
+    const days = daysInMonth(m, year);
+    const start = new Date(year, m - 1, 1);
+    const end = new Date(year, m - 1, days, 23, 59, 59);
+    activeRange = { start, end, label: `${monthName(m)} 1 — ${monthName(m)} ${days}, ${year}` };
+    label.textContent = activeRange.label;
+    warning.classList.add("hidden");
+  } else {
+    // Multiple months
+    const sorted = [...months].sort((a, b) => a - b);
+    const first = sorted[0];
+    detectedMonth = { month: first, year };
+    const days = daysInMonth(first, year);
+    const start = new Date(year, first - 1, 1);
+    const end = new Date(year, first - 1, days, 23, 59, 59);
+    activeRange = { start, end, label: `${monthName(first)} 1 — ${monthName(first)} ${days}, ${year}` };
+    label.textContent = activeRange.label;
+    warning.textContent = `⚠ Files cover different months (${sorted.map(monthName).join(", ")}). Comparing against ${monthName(first)} only.`;
+    warning.classList.remove("hidden");
+  }
+
+  bar.classList.remove("hidden");
 }
 
 /* ── Upload handlers ──────────────────────────────────── */
 const fileA = document.getElementById("file-a");
 const fileB = document.getElementById("file-b");
-const fnameA = document.getElementById("fname-a");
-const fnameB = document.getElementById("fname-b");
 const zoneA = document.getElementById("zone-a");
 const zoneB = document.getElementById("zone-b");
-const mapperB = document.getElementById("mapper-b");
-const colNameB = document.getElementById("col-name-b");
-const colHoursB = document.getElementById("col-hours-b");
-const btnCompare = document.getElementById("btn-compare");
 
-// Drag-over visual
 [zoneA, zoneB].forEach(z => {
-  z.addEventListener("dragover", () => z.classList.add("dragover"));
+  z.addEventListener("dragover", e => { e.preventDefault(); z.classList.add("dragover"); });
   z.addEventListener("dragleave", () => z.classList.remove("dragover"));
-  z.addEventListener("drop", () => z.classList.remove("dragover"));
+  z.addEventListener("drop", e => { e.preventDefault(); z.classList.remove("dragover"); });
 });
 
+// Source A
 fileA.addEventListener("change", async () => {
   const f = fileA.files[0]; if (!f) return;
-  fnameA.textContent = f.name;
+  document.getElementById("fname-a").textContent = f.name;
   try {
-    sourceA = await parseSourceA(f);
+    await parseSourceA(f);
     zoneA.classList.add("loaded");
-    renderPreview("preview-a", sourceA);
+    renderSourceAPreview();
     checkReady();
-  } catch (e) { fnameA.textContent = "Error: " + e.message; }
+  } catch (e) {
+    document.getElementById("fname-a").textContent = "Error: " + e.message;
+  }
 });
 
+// Source B — multiple files
 fileB.addEventListener("change", async () => {
-  const f = fileB.files[0]; if (!f) return;
-  fnameB.textContent = f.name;
-  try {
-    const rows = await readSourceBRaw(f);
-    rawSheetB = rows;
-    headersB = rows[0] || [];
+  const files = fileB.files;
+  if (!files || files.length === 0) return;
 
-    // Populate column dropdowns
-    colNameB.innerHTML = "";
-    colHoursB.innerHTML = "";
-    headersB.forEach((h, i) => {
-      const label = h ? String(h) : `Column ${i + 1}`;
-      colNameB.innerHTML += `<option value="${i}">${esc(label)}</option>`;
-      colHoursB.innerHTML += `<option value="${i}">${esc(label)}</option>`;
-    });
+  document.getElementById("fname-b").textContent = `${files.length} file${files.length > 1 ? 's' : ''} selected`;
 
-    // Auto-guess: first col that smells like "name" and "hours"
-    headersB.forEach((h, i) => {
-      const lc = String(h).toLowerCase();
-      if (lc.includes("name") || lc.includes("staff") || lc.includes("worker") || lc.includes("employee")) colNameB.value = i;
-      if (lc.includes("hour") || lc.includes("hrs") || lc.includes("total")) colHoursB.value = i;
-    });
+  for (const f of files) {
+    // Skip if already loaded (by filename)
+    if (workerFiles.some(w => w.fileName === f.name)) continue;
+    const parsed = await parseWorkerFile(f);
+    workerFiles.push(parsed);
+  }
 
-    mapperB.classList.remove("hidden");
-    zoneB.classList.add("loaded");
-    sourceB = null;
-    renderPreview("preview-b", null);
-  } catch (e) { fnameB.textContent = "Error: " + e.message; }
-});
-
-document.getElementById("apply-map-b").addEventListener("click", () => {
-  if (!rawSheetB) return;
-  const ni = parseInt(colNameB.value);
-  const hi = parseInt(colHoursB.value);
-  sourceB = parseSourceBWithMapping(rawSheetB, ni, hi);
-  renderPreview("preview-b", sourceB);
+  zoneB.classList.add("loaded");
+  renderWorkerCards();
   checkReady();
 });
 
+/* ── Compare readiness check ──────────────────────────── */
 function checkReady() {
-  btnCompare.disabled = !(sourceA && sourceB);
+  // Just update UI hints — actual validation happens on click
+  const errEl = document.getElementById("compare-error");
+  errEl.classList.add("hidden");
 }
 
 /* ── Compare ──────────────────────────────────────────── */
-btnCompare.addEventListener("click", compare);
+document.getElementById("btn-compare").addEventListener("click", compare);
 
 function compare() {
-  if (!sourceA || !sourceB) return;
+  const errEl = document.getElementById("compare-error");
 
-  const allNames = new Set([...sourceA.keys(), ...sourceB.keys()]);
+  if (!domPortalByStaff) {
+    errEl.textContent = "Upload Source A (DOM Portal) first.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  if (workerFiles.length === 0) {
+    errEl.textContent = "Upload at least one Source B (Support Worker) file.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  if (!activeRange) {
+    errEl.textContent = "No date range detected — check that worker files have a valid month.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  errEl.classList.add("hidden");
+
+  // Build Source B map: normKey → {display, hours}
+  const srcB = new Map();
+  for (const w of workerFiles) {
+    if (!w.staffName) continue;
+    const key = normKey(w.staffName);
+    // If duplicate, sum (shouldn't happen but handle gracefully)
+    if (srcB.has(key)) {
+      srcB.get(key).hours += w.totalHours;
+    } else {
+      srcB.set(key, { display: w.staffName, hours: w.totalHours });
+    }
+  }
+
+  // Collect all staff keys from both sources
+  const allKeys = new Set([...getDomPortalStaffKeys(), ...srcB.keys()]);
   results = [];
 
-  for (const name of allNames) {
-    const hrsA = sourceA.has(name) ? round2(sourceA.get(name)) : null;
-    const hrsB = sourceB.has(name) ? round2(sourceB.get(name)) : null;
+  for (const key of allKeys) {
+    const hrsA = sumDomPortalHours(key, activeRange.start, activeRange.end);
+    const hrsB = srcB.has(key) ? srcB.get(key).hours : null;
+    const displayName = srcB.has(key) ? srcB.get(key).display : getDomPortalDisplay(key);
 
     let diff = 0, impact = 0, status = "", statusClass = "", badgeClass = "";
 
-    if (hrsA === null) {
-      diff = hrsB;
-      impact = round2(hrsB * RATE);
-      status = "Missing in DOM Portal";
-      statusClass = "status-missing";
-      badgeClass = "badge-missing";
+    if (hrsA === null || hrsA === 0) {
+      // Not in DOM Portal (or zero hours in range)
+      if (hrsB !== null) {
+        diff = hrsB;
+        impact = round2(Math.abs(hrsB) * RATE);
+        status = "Submitted but not in DOM Portal";
+        statusClass = "status-missing";
+        badgeClass = "badge-missing";
+      }
     } else if (hrsB === null) {
-      diff = -hrsA;
+      diff = round2(0 - hrsA);
       impact = round2(hrsA * RATE);
-      status = "Missing in Support Worker sheet";
+      status = "No submission";
       statusClass = "status-missing";
       badgeClass = "badge-missing";
     } else {
       diff = round2(hrsB - hrsA);
       impact = round2(Math.abs(diff) * RATE);
-      if (diff === 0) {
+      if (Math.abs(diff) <= DISC_THRESHOLD) {
         status = "Match";
         statusClass = "status-match";
         badgeClass = "badge-match";
       } else if (diff > 0) {
-        status = "Mismatch — staff over-claiming";
+        status = "Over-claiming";
         statusClass = "status-mismatch";
         badgeClass = "badge-over";
       } else {
-        status = "Mismatch — staff under-claimed";
+        status = "Under-claimed";
         statusClass = "status-mismatch";
         badgeClass = "badge-under";
       }
     }
 
-    results.push({ name, hrsA, hrsB, diff, impact, status, statusClass, badgeClass, note: "" });
+    if (status) {
+      results.push({ name: displayName, key, hrsA: hrsA !== null ? hrsA : null, hrsB: hrsB !== null ? hrsB : null, diff, impact, status, statusClass, badgeClass, note: "" });
+    }
   }
 
-  // Sort: discrepancies first, then matches, alpha within each group
+  // Sort: discrepancies first by £ impact desc, then matches
   results.sort((a, b) => {
-    const aDisc = a.status !== "Match" ? 0 : 1;
-    const bDisc = b.status !== "Match" ? 0 : 1;
-    if (aDisc !== bDisc) return aDisc - bDisc;
+    const aMatch = a.status === "Match" ? 1 : 0;
+    const bMatch = b.status === "Match" ? 1 : 0;
+    if (aMatch !== bMatch) return aMatch - bMatch;
+    if (aMatch === 0) return b.impact - a.impact; // largest £ impact first
     return a.name.localeCompare(b.name);
   });
 
   renderResults();
-  populateDirectory();
+  populateEmailDirectory();
   document.getElementById("results-section").classList.remove("hidden");
   document.getElementById("btn-export").classList.remove("hidden");
 }
@@ -516,7 +869,6 @@ function renderResults() {
   });
   tbody.innerHTML = html;
 
-  // Bind note inputs
   tbody.querySelectorAll(".note-input").forEach(ta => {
     ta.addEventListener("input", () => {
       results[parseInt(ta.dataset.idx)].note = ta.value;
@@ -525,14 +877,10 @@ function renderResults() {
 }
 
 /* ── Email directory ──────────────────────────────────── */
-function populateDirectory() {
+function populateEmailDirectory() {
   const dir = loadDirectory();
-  const allNames = results.map(r => r.name);
-
-  // Add any new names
-  allNames.forEach(n => { if (!(n in dir)) dir[n] = ""; });
+  results.forEach(r => { if (!(r.name in dir)) dir[r.name] = ""; });
   saveDirectory(dir);
-
   renderDirectory();
 }
 
@@ -563,9 +911,8 @@ document.getElementById("dir-toggle").addEventListener("click", () => {
 window.saveDirEntry = function(btn) {
   const row = btn.closest(".directory-row");
   const input = row.querySelector(".dir-email");
-  const name = input.dataset.name;
   const dir = loadDirectory();
-  dir[name] = input.value.trim();
+  dir[input.dataset.name] = input.value.trim();
   saveDirectory(dir);
 };
 
@@ -613,9 +960,10 @@ Rishil`;
 
 /* ── Export to Excel ──────────────────────────────────── */
 document.getElementById("btn-export").addEventListener("click", () => {
-  const rows = [["Staff", "Hours (DOM Portal)", "Hours (Support Worker)", "Difference (hrs)", "£ Impact", "Status", "Notes"]];
+  const header = ["Staff", "DOM Portal hrs", "Submitted hrs", "Difference", "£ Impact", "Status", "Notes"];
+  const data = [header];
   results.forEach(r => {
-    rows.push([
+    data.push([
       r.name,
       r.hrsA !== null ? r.hrsA : "",
       r.hrsB !== null ? r.hrsB : "",
@@ -626,11 +974,9 @@ document.getElementById("btn-export").addEventListener("click", () => {
     ]);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-
-  // Set column widths
+  const ws = XLSX.utils.aoa_to_sheet(data);
   ws["!cols"] = [
-    { wch: 28 }, { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 12 }, { wch: 34 }, { wch: 30 },
+    { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 32 }, { wch: 30 },
   ];
 
   const wb = XLSX.utils.book_new();
