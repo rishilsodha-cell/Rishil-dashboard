@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Clock</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0d;
+    color: #e8e8ea;
+    font-family: "JetBrains Mono", "Roboto Mono", "SF Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clocks {
+    display: flex;
+    gap: 4rem;
+    padding: 2rem;
+  }
+
+  .clock {
+    text-align: center;
+    min-width: 200px;
+  }
+
+  .city {
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(232, 232, 234, 0.4);
+    margin-bottom: 0.5rem;
+  }
+
+  .time {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .date {
+    font-size: 0.8rem;
+    color: rgba(232, 232, 234, 0.3);
+    margin-top: 0.6rem;
+  }
+
+  @media (max-width: 700px) {
+    .clocks {
+      flex-direction: column;
+      gap: 2.5rem;
+      align-items: center;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="clocks">
+  <div class="clock">
+    <div class="city">New York</div>
+    <div class="time" id="time-ny">--:--:--</div>
+    <div class="date" id="date-ny">---</div>
+  </div>
+  <div class="clock">
+    <div class="city">London</div>
+    <div class="time" id="time-ldn">--:--:--</div>
+    <div class="date" id="date-ldn">---</div>
+  </div>
+  <div class="clock">
+    <div class="city">Dubai</div>
+    <div class="time" id="time-dxb">--:--:--</div>
+    <div class="date" id="date-dxb">---</div>
+  </div>
+</div>
+<script>
+  const clocks = [
+    { tz: "America/New_York", timeEl: "time-ny", dateEl: "date-ny" },
+    { tz: "Europe/London",    timeEl: "time-ldn", dateEl: "date-ldn" },
+    { tz: "Asia/Dubai",       timeEl: "time-dxb", dateEl: "date-dxb" },
+  ];
+
+  const timeFmtCache = {};
+  const dateFmtCache = {};
+
+  clocks.forEach(c => {
+    timeFmtCache[c.tz] = new Intl.DateTimeFormat("en-GB", {
+      timeZone: c.tz, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+    });
+    dateFmtCache[c.tz] = new Intl.DateTimeFormat("en-GB", {
+      timeZone: c.tz, weekday: "short", day: "numeric", month: "short", year: "numeric",
+    });
+  });
+
+  function tick() {
+    const now = new Date();
+    clocks.forEach(c => {
+      document.getElementById(c.timeEl).textContent = timeFmtCache[c.tz].format(now);
+      document.getElementById(c.dateEl).textContent = dateFmtCache[c.tz].format(now);
+    });
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
